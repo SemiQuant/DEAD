@@ -124,6 +124,7 @@ shinyServer(function(input, output, session){
         colnames(ep.res) <- colnames(res.car.edit)
         row.names(ep.res) <- NULL
         DT::datatable(rbind(ep.res, res.car.edit), options = list(pageLength = 21))
+
     })
 
 
@@ -212,16 +213,35 @@ shinyServer(function(input, output, session){
         rownames(res.tmp.A) <- NULL
         rownames(comb) <- NULL
         rownames(res2) <- NULL
-
-        output$ptab1 <- renderPrint(print(res.tmp.A))
         comb <- comb[c(7,1:6)]
         colnames(comb) <- c("Test", "Test1", "Test2", "Difference", "p.value", "Test Statistic", "Method")
-        output$ptab3 <- renderDataTable(comb)
         res2 <- res2[c(10,1:3,8,7, 9,4,5,6)]
         colnames(res2) <- c("Test", "Test1", "Test2", "Ratio", "p.value", "Test.Statistic", "Method", "SE.log", "Lower Conficence Interval", "Upper Conficence Interval")
-        output$ptab4 <- renderDataTable(res2)
+
+        # test <<- comb
+        # test2<<-res2
+        if (input$roundDT2){
+            for (col in c(2:4,6)){
+                comb[c(col)] <- round(unlist(comb[c(col)]), 2) #dont know why its making me do this, think dataTable package doing something
+            }
+
+            for (col in c(2,3,4,6,8,9,10)){
+                res2[c(col)] <- round(unlist(res2[c(col)]), 2)
+            }
+        }
+
+        # datatable(, options = list(pageLength = 21))
+
+        output$ptab1 <- renderPrint(print(res.tmp.A))
+        output$ptab3 <- renderDataTable(
+            datatable(comb[-c(6)], selection = 'none')
+        )
+        output$ptab4 <- renderDataTable(
+            datatable(res2[-c(6, 8)], selection = 'none')
+        )
 
     })
+
 
 
 

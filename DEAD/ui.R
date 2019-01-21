@@ -131,7 +131,6 @@ header <- dashboardHeader(title =  div(img(src = "sq.png", height="42.885", widt
 sidebar <- dashboardSidebar(
     width = 300,
     h3("Select a Test", align = "center"),
-
     dashboardSidebar(
         sidebarMenu(id = "sidebarmenu",
                     menuItem("Dashboard", tabName = "dashboard", icon = icon("home")),
@@ -230,17 +229,19 @@ body <- dashboardBody(
 
         tabItem(tabName = "DiagTAB2",
                 h5("If you data has missing values, then the estimates here will differ from chacking against just the reference standars as only complete data can be considered for these statistics"),
+                sliderInput("CI2", "Confidence Interval:", min = 0.8, max = 0.99, 0.95, step = 0.05),
                 box(title = "Enter Data (tab seperated, you can copy paste from excel)", collapsible = T, collapsed = F, width = 6,
-                    sliderInput("CI2", "Confidence Interval:", min = 0.8, max = 0.99, 0.95, step = 0.05),
+
                     aceEditor("DTbin_input", theme = "idle_fingers",
                               value='GoldStandard\tTest1\tTest2\n0\t0\t1\n0\t1\t0\n0\t0\t1\n0\t0\t0\n1\t1\t0\n1\t0\t0\n0\t1\t1\n0\t1\t0\n0\t1\t1\n1\t1\t0\n0\t0\t0\n1\t1\t1\n1\t0\t0\n1\t1\t1\n0\t1\t0\n0\t1\t0\n1\t1\t0\n0\t0\t1\n1\t0\t0\n1\t1\t0\n1\t0\t0\n1\t1\t0\n1\t1\t1\n1\t0\t0\n1\t1\t1\n1\t1\t0\n0\t1\t0\n0\t0\t1\n0\t0\t0\n0\t1\t0\n1\t1\t0\n0\t0\t1\n1\t1\t1\n1\t0\t0\n1\t0\t1\n0\t1\t0\n1\t1\t0\n1\t0\t1\n1\t0\t0\n0\t1\t0\n1\t1\t0\n0\t1\t1\n1\t0\t1\n1\t1\t1\n0\t1\t0\n1\t0\t0\n0\t1\t1\n1\t0\t0\n1\t0\t1\n0\t0\t0\n0\t0\t1\n1\t0\t1\n0\t1\t0\n1\t1\t0\n1\t0\t1\n1\t0\t1\n1\t0\t0\n0\t0\t0\n1\t1\t0\n0\t0\t1\n1\t0\t0\n1\t1\t0\n1\t0\t0\n0\t1\t1\n0\t1\t0\n1\t0\t1\n1\t1\t1\n0\t0\t0\n1\t1\t0\n1\t0\t0\n1\t0\t1\n0\t0\t0\n1\t1\t1\n0\t0\t0\n0\t0\t1\n0\t0\t0\n0\t1\t0\n0\t1\t0\n0\t1\t0\n0\t0\t1\n1\t0\t0\n1\t1\t0\n1\t0\t0\n0\t1\t1\n1\t1\t0\n0\t1\t0\n1\t0\t0\n0\t1\t0\n1\t0\t0\n1\t0\t1\n0\t1\t0\n1\t1\t1\n1\t1\t0\n1\t1\t0\n1\t1\t0\n0\t1\t0\n1\t0\t0\n1\t0\t0\n0\t0\t1\n0\t1\t0\n0\t1\t0\n0\t0\t1\n0\t1\t0\n0\t0\t0\n0\t0\t0\n0\t0\t0\n0\t0\t1\n1\t0\t1\n0\t1\t0\n1\t0\t0\n0\t1\t0\n1\t1\t1\n1\t0\t0\n0\t0\t0\n1\t0\t0\n1\t1\t0\n0\t0\t0\n1\t0\t1\n1\t1\t0\n0\t1\t0\n1\t1\t0\n0\t0\t0\n0\t0\t1\n0\t0\t1\n0\t0\t0\n1\t0\t0\n0\t1\t0\n1\t0\t1\n0\t1\t1\n1\t0\t0\n1\t1\t0\n0\t0\t0\n0\t1\t0\n1\t0\t1\n0\t1\t0\n1\t1\t0\n1\t0\t0\n0\t1\t0\n0\t1\t1\n1\t0\t0\n0\t0\t0\n1\t0\t0\n1\t1\t0\n0\t0\t1\n1\t0\t1\n1\t1\t1\n0\t0\t0\n1\t0\t1\n1\t0\t0\n0\t1\t0\n1\t0\t0\n1\t1\t0\n1\t0\t1\n0\t1\t0\n1\t0\t0\n1\t1\t0\n1\t1\t0\n1\t1\t1\n1\t0\t0\n1\t0\t0\n0\t1\t1\n1\t1\t0\n0\t0\t0\n1\t1\t0\n0\t0\t0\n1\t1\t0\n1\t1\t0\n0\t0\t1\n1\t1\t1\n1\t0\t0\n1\t1\t0\n1\t0\t0\n1\t0\t0\n0\t1\t1\n1\t0\t1\n1\t0\t1\n1\t1\t0\n0\t0\t0\n1\t0\t0\n1\t1\t0\n1\t0\t1\n0\t0\t0\n1\t0\t1\n1\t0\t0\n0\t0\t0\n0\t1\t0\n1\t0\t0\n0\t0\t0\n1\t0\t0\n1\t0\t0\n1\t1\t1\n1\t0\t0\n0\t0\t0\n1\t0\t0\n1\t0\t1\n0\t1\t0\n1\t0\t0\n0\t1\t1\n1\t1\t1\n1\t1\t0',
-                              mode="r", height = "670px", fontSize = 14)),
+                              mode="r", height = "765px", fontSize = 14)),
                 # box(title = "Enter Data (tab seperated, you can copy paste from excel)", collapsible = T, collapsed = F, width = 6, height = "300px",
                 # verbatimTextOutput("ROCdt"))
 
                 verbatimTextOutput("ptabA"),
                 verbatimTextOutput("ptab1"),
                 br(),
+                checkboxInput("roundDT2", "Round Values?", value = F),
                 dataTableOutput("ptab3"),
                 dataTableOutput("ptab4")
 
