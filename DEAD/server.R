@@ -36,6 +36,28 @@ require(epitools)
 # require(shinyalert)
 #Stuff here runs once per app
 
+
+acc.paired.me <- function (tab, alpha, ...)
+{
+    if (missing(tab))
+        stop("Table is missing.")
+    if (class(tab) != "tab.paired")
+        stop("Table must be of class 'tab.paired'")
+    if (missing(alpha))
+        alpha <- 0.05
+    test1 <- read.tab.1test(tab$diseased[3, 1], tab$non.diseased[3,
+                                                                 1], tab$diseased[3, 2], tab$non.diseased[3, 2], testname = tab$testnames[1])
+    test2 <- read.tab.1test(tab$diseased[1, 3], tab$non.diseased[1,
+                                                                 3], tab$diseased[2, 3], tab$non.diseased[2, 3], testname = tab$testnames[2])
+    acc.test1 <- acc.1test(test1, alpha)
+    acc.test2 <- acc.1test(test2, alpha)
+    results <- list(acc.test1, acc.test2)
+    names(results) <- c("Test1", "Test2")
+    class(results) <- "acc.paired"
+    return(results)
+}
+
+
 #  I put everything in a loop as not all the things can take in vetors. So this was jsut easier.
 #
 #
@@ -182,7 +204,8 @@ shinyServer(function(input, output, session){
         pv3$Method <- "Weighted Generalized Score Statistic (wgs)"
 
 
-        res.tmp.A <- acc.paired(ptab, alpha = 1-confInt)
+        # res.tmp.A <- acc.paired(ptab, alpha = 1-confInt)
+        res.tmp.A <- acc.paired.me(ptab, alpha = 1-confInt)
 
 
         spec.tmp <- data.frame(spec.tmp[,c(1,2,3,5,4)])
