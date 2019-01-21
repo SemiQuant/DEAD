@@ -19,6 +19,9 @@ require(shinyAce)
 require(epiR)
 require(DTComPair)
 require(epitools)
+require(tidyverse)
+require(plotly)
+
 
 # TODO
 # Make all outputs from diganostic test against gold standard - need to add pvalues
@@ -208,6 +211,95 @@ shinyServer(function(input, output, session){
         res.tmp.A <- acc.paired.me(ptab, alpha = 1-confInt)
 
 
+
+        res.plt <- rbind(t(data.frame(res.tmp.A$Test1$sensitivity,
+                                      res.tmp.A$Test1$specificity,
+                                      res.tmp.A$Test1$ppv,
+                                      res.tmp.A$Test1$npv,
+                                      res.tmp.A$Test1$pdlr,
+                                      res.tmp.A$Test1$ndlr)),
+                         t(data.frame(
+                             res.tmp.A$Test2$sensitivity,
+                             res.tmp.A$Test2$specificity,
+                             res.tmp.A$Test2$ppv,
+                             res.tmp.A$Test2$npv,
+                             res.tmp.A$Test2$pdlr,
+                             res.tmp.A$Test2$ndlr)))
+        res.plt <- data.frame(res.plt)
+        res.plt$Test <- c(rep("Test 1", 6), rep("Test 2", 6))
+        res.plt$Metric <- rep(c("Sensitivity", "Specificity", "PPV", "NPV", "PDLR", "NDLR"), 2)
+        res.plt$Estimate <- res.plt$est
+
+
+        Offset <- data.frame(Test = unique(res.plt$Test),
+                             offset = seq(-0.1, 0.1,length.out = length(unique(res.plt$Test))))
+
+        res.plt <- merge(res.plt, Offset, by = "Test", all.x = TRUE)
+
+        ## Calculate an x location
+        res.plt$y_location <- as.numeric(as.factor(res.plt$Metric)) + res.plt$offset
+        # xend1 <- max(res.plt$est*100+res.plt$se*100)+max(res.plt$est*100+res.plt$se*100)*0.05
+        hline <- function(y = 0, color = "#e7e7e7") {
+            list(
+                type = "line",
+                x0 = 0,
+                x1 = 1,
+                xref = "paper",
+                opacity = 0.3,
+                y0 = y,
+                y1 = y,
+                line = list(color = color)
+            )
+        }
+
+
+
+        output$stat.plt1 <- renderPlotly({
+            res.plt%>%
+                plot_ly( y = ~y_location, x = ~Estimate*100, type = 'scatter', mode = 'markers', color = ~Test,
+                         text = ~paste0(Test," - Estimate ", round(Estimate ,2)),
+                         # hoverinfo = "text",
+                         error_x = ~list(array = se*100,
+                                         color = 'white')
+                )%>%
+                layout(
+                    font=list(
+                        family = "sans serif",
+                        size = 14,
+                        color = 'White'),
+                    paper_bgcolor='#272b30',
+                    plot_bgcolor='#272b30',
+                    # autosize = F, width = 800, height =850,
+                    yaxis=list(title=NA,
+                               zeroline=FALSE,
+                               tickmode = "array",
+                               tickvals = unique(as.numeric(sort(as.factor(res.plt$Metric)))),
+                               ticktext = unique((res.plt$Metric)),
+                               showgrid = TRUE,
+                               showline = FALSE,
+                               gridcolor = "#272b30"
+                    ),
+                    shapes = list(hline(0.8),
+                                  hline(1.2),
+                                  hline(1.8),
+                                  hline(2.2),
+                                  hline(2.8),
+                                  hline(3.2),
+                                  hline(3.8),
+                                  hline(4.2),
+                                  hline(4.8),
+                                  hline(5.2),
+                                  hline(5.8),
+                                  hline(6.2)
+                    )
+                )
+
+        })
+
+
+
+
+
         spec.tmp <- data.frame(spec.tmp[,c(1,2,3,5,4)])
         spec.tmp$Method <- "McNemar"
         spec.tmp2 <- data.frame(spec.tmp2)
@@ -233,7 +325,7 @@ shinyServer(function(input, output, session){
 
         res2 <- rbind(pv2, res2)
 
-        rownames(res.tmp.A) <- NULL
+        # rownames(res.tmp.A) <- NULL
         rownames(comb) <- NULL
         rownames(res2) <- NULL
         comb <- comb[c(7,1:6)]
@@ -254,6 +346,8 @@ shinyServer(function(input, output, session){
         }
 
         # datatable(, options = list(pageLength = 21))
+        # test1 <<- comb[-c(6)]
+        # test2 <<- res2
 
         output$ptab1 <- renderPrint(print(res.tmp.A))
         output$ptab3 <- renderDataTable(

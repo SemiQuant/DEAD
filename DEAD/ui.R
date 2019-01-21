@@ -124,7 +124,7 @@ header <- dashboardHeader(title =  div(img(src = "sq.png", height="42.885", widt
                                                         href = "http://lunginstitute.co.za/liiu/")
                           ),
                           dropdownMenu(type = "notifications", icon = icon("copyright"), badgeStatus = NULL,
-                                       notificationItem(text = "Copyright 2018")
+                                       notificationItem(text = "Copyright 2019")
                           )
 )
 
@@ -197,16 +197,12 @@ body <- dashboardBody(
               &subject="Sample Size Calculator Suggestion">Please email if you want to request a specific test or have a suggestion.</a>'
                 ),
                 br(),
-                "Calculations use the following packages: ",
-                tags$a(href="https://www.rdocumentation.org/packages/pwr/versions/1.2-2", "pwr, "),
-                tags$a(href="https://www.rdocumentation.org/packages/samplingbook/versions/1.2.2", "samplingbook, "),
-                tags$a(href="https://www.rdocumentation.org/packages/RnaSeqSampleSize/versions/1.4.2", "RnaSeqSampleSize, "),
-                tags$a(href="https://www.rdocumentation.org/packages/Hmisc/versions/4.1-1", "Hmisc")
+                "Calculations use the following packages: "
+                # tags$a(href="https://www.rdocumentation.org/packages/pwr/versions/1.2-2", "pwr, "),
+                # tags$a(href="https://www.rdocumentation.org/packages/samplingbook/versions/1.2.2", "samplingbook, "),
+                # tags$a(href="https://www.rdocumentation.org/packages/RnaSeqSampleSize/versions/1.4.2", "RnaSeqSampleSize, "),
+                # tags$a(href="https://www.rdocumentation.org/packages/Hmisc/versions/4.1-1", "Hmisc")
         ),
-
-
-
-
 
 
         tabItem(tabName = "DiagTAB1",
@@ -222,10 +218,7 @@ body <- dashboardBody(
                 br(),
                 verbatimTextOutput("DTPdt1"),
                 dataTableOutput("DTPdt.res1")
-
-
         ),
-
 
         tabItem(tabName = "DiagTAB2",
                 h5("If you data has missing values, then the estimates here will differ from chacking against just the reference standars as only complete data can be considered for these statistics"),
@@ -241,6 +234,12 @@ body <- dashboardBody(
                 verbatimTextOutput("ptabA"),
                 verbatimTextOutput("ptab1"),
                 br(),
+
+                plotlyOutput("stat.plt1"),
+                br(),
+                br(),
+                # br(),
+                # br(),
                 checkboxInput("roundDT2", "Round Values?", value = F),
                 dataTableOutput("ptab3"),
                 dataTableOutput("ptab4")
