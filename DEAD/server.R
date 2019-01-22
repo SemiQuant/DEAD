@@ -163,14 +163,27 @@ shinyServer(function(input, output, session){
             ", p.value=", NIR["p.value"])
         )
 
+        colnames(ep.res) <- colnames(res.car.edit)
+        row.names(ep.res) <- NULL
+        res.car.prnt <- rbind(ep.res, res.car.edit)[c(1:4)]
 
+        output$downloadDT1 <- downloadHandler(
+            filename = function() {
+                paste("DEAD_SingleTest", ".csv", sep = "")
+            },
+            content = function(file) {
+                write.csv(res.car.prnt, file, row.names = FALSE)
+            }
+        )
 
         #
         # dat.tbl.eprF <- tab.1test(d=Disease, y=Test, data=dat)
         # acc.1test(dat.tbl.eprF, 1-confInt)
-        colnames(ep.res) <- colnames(res.car.edit)
-        row.names(ep.res) <- NULL
-        DT::datatable(rbind(ep.res, res.car.edit)[c(1:4)], options = list(pageLength = 20))
+
+        DT::datatable(res.car.prnt, options = list(pageLength = 20))
+
+
+
 
     })
 
@@ -387,7 +400,7 @@ shinyServer(function(input, output, session){
     #     colnames(comb)[7:8] <- c("Lower Conficence Interval", "Upper Conficence Interval")
     # comb <<- rbind(comb, res2)
 
-
+# test1<<-comb
         output$ptab1 <- renderPrint(print(res.tmp.A))
         output$ptab3 <- renderDataTable(
             datatable(comb, selection = 'none')
@@ -395,6 +408,26 @@ shinyServer(function(input, output, session){
         output$ptab4 <- renderDataTable(
             datatable(res2, selection = 'none')
         )
+
+        comb$p.value <- as.numeric(comb$p.value)
+        output$downloadDT2A <- downloadHandler(
+            filename = function() {
+                paste("DEAD_DualTestsA", ".csv", sep = "")
+            },
+            content = function(file2) {
+                write.csv(comb, file2, row.names = FALSE)
+            }
+        )
+
+        output$downloadDT2B <- downloadHandler(
+            filename = function() {
+                paste("DEAD_DualTestsB", ".csv", sep = "")
+            },
+            content = function(file) {
+                write.csv(res2, file, row.names = FALSE)
+            }
+        )
+
 
     })
 

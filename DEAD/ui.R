@@ -224,7 +224,10 @@ body <- dashboardBody(
                 verbatimTextOutput("NIR"),
                 "The NIR is the accuraccy of the model if you set the prediction to the most common disease state in the sample",
                 br(),
-                dataTableOutput("DTPdt.res1")
+                dataTableOutput("DTPdt.res1"),
+                fluidRow(
+                    p(class = 'text-center', downloadButton('downloadDT1', 'Download Data Table'))
+                )
         ),
 
         tabItem(tabName = "DiagTAB2",
@@ -249,7 +252,13 @@ body <- dashboardBody(
                 # br(),
                 checkboxInput("roundDT2", "Round Values?", value = T),
                 dataTableOutput("ptab3"),
-                dataTableOutput("ptab4")
+                fluidRow(
+                    p(class = 'text-center', downloadButton('downloadDT2A', 'Download Data Table A'))
+                ),
+                dataTableOutput("ptab4"),
+                fluidRow(
+                    p(class = 'text-center', downloadButton('downloadDT2B', 'Download Data Table B'))
+                )
 
         ),
 
