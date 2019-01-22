@@ -29,6 +29,8 @@ require(plotly)
 # ROC curve more options
 # Option to round off values
 
+# This code is filthy and disgusting, you shoul be ashamed. CLEAN IT UP!
+
 
 # if get bioconductor error do this
 # options(repos = BiocInstaller::biocinstallRepos())
@@ -257,6 +259,7 @@ shinyServer(function(input, output, session){
         res.plt <- merge(res.plt, Offset, by = "Test", all.x = TRUE)
 
         ## Calculate an x location
+        res.plt <- res.plt[order(res.plt$Metric, decreasing = T),]
         res.plt$y_location <- as.numeric(as.factor(res.plt$Metric)) + res.plt$offset
         # xend1 <- max(res.plt$est*100+res.plt$se*100)+max(res.plt$est*100+res.plt$se*100)*0.05
         hline <- function(y = 0, color = "#e7e7e7") {
@@ -277,8 +280,8 @@ shinyServer(function(input, output, session){
         output$stat.plt1 <- renderPlotly({
             res.plt%>%
                 plot_ly( y = ~y_location, x = ~Estimate*100, type = 'scatter', mode = 'markers', color = ~Test,
-                         text = ~paste0(Test," - Estimate ", round(Estimate ,2)),
-                         # hoverinfo = "text",
+                         text = ~paste0(Test,": ", Metric, "\nEstimate: ", round(Estimate ,2), " (", round(lcl ,2), ",", round(ucl ,2), ")" ),
+                         hoverinfo = "text",
                          error_x = ~list(array = se*100,
                                          color = 'white')
                 )%>%
@@ -293,8 +296,8 @@ shinyServer(function(input, output, session){
                     yaxis=list(title=NA,
                                zeroline=FALSE,
                                tickmode = "array",
-                               tickvals = unique(as.numeric(sort(as.factor(res.plt$Metric)))),
-                               ticktext = unique((res.plt$Metric)),
+                               tickvals = unique(as.numeric(as.factor(res.plt$Metric))),
+                               ticktext = unique(res.plt$Metric),
                                showgrid = TRUE,
                                showline = FALSE,
                                gridcolor = "#272b30"
@@ -369,12 +372,28 @@ shinyServer(function(input, output, session){
         # test1 <<- comb[-c(6)]
         # test2 <<- res2
 
+        comb$Test <- c("Sensitivity", "Specificty", "Sensitivity", "Specificty",
+                       "Positive Predictive Value", "Negative Predictive Value","Positive Predictive Value", "Negative Predictive Value")
+        res2$Test <- c("Positive Predictive Value", "Negative Predictive Value",
+                       "Positive Likelihood Ratio", "Negative Likelihood Ratio")
+
+        comb <- comb[-c(6)]
+        comb <- comb[c(1,3,2,4,5,7,6,8), c(1,6,2,3,4,5)]
+        res2 <- res2[-c(6, 8)]
+        res2 <- res2[c(1,6,2,3,4,5,7,8)]
+
+    #     comb$LCI <- NA
+    #     comb$UCI <- NA
+    #     colnames(comb)[7:8] <- c("Lower Conficence Interval", "Upper Conficence Interval")
+    # comb <<- rbind(comb, res2)
+
+
         output$ptab1 <- renderPrint(print(res.tmp.A))
         output$ptab3 <- renderDataTable(
-            datatable(comb[-c(6)], selection = 'none')
+            datatable(comb, selection = 'none')
         )
         output$ptab4 <- renderDataTable(
-            datatable(res2[-c(6, 8)], selection = 'none')
+            datatable(res2, selection = 'none')
         )
 
     })

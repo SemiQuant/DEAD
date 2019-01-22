@@ -5,8 +5,8 @@ account: semiquant
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 657420
-bundleId: 1827681
+bundleId: 1828673
 url: https://semiquant.shinyapps.io/DEAD/
-when: 1548103196.70249
+when: 1548153523.94606
 asMultiple: FALSE
 asStatic: FALSE
