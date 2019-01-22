@@ -14,6 +14,9 @@ require(ggplot2)
 # devtools::install_github("nik01010/dashboardthemes")
 require(dashboardthemes)
 
+require(extrafont)
+require(xkcd)
+
 #################
 dark_grey_edited <- shinyDashboardThemeDIY(
 
@@ -151,7 +154,7 @@ sidebar <- dashboardSidebar(
                     conditionalPanel("input.sidebarmenu === 'ChiTab'",
                                      menuItem("Enter data below using tab seperation:"),
                                      aceEditor("rc_input",  theme = "idle_fingers",
-                                               value='Res \tPositive\tNegative\nPositive\t3\t1\nNegative\t1\t3', mode="r", height = "150px", fontSize = 14),
+                                               value='Res \tPositive\tNegative\nPositive\t13\t21\nNegative\t51\t9', mode="r", height = "150px", fontSize = 14),
                                      checkboxInput("CC", "Use Continuity Correction")
                     ),
 
@@ -184,24 +187,23 @@ body <- dashboardBody(
     # fluidRow("hello"),
     tabItems(
         tabItem(tabName = "dashboard",
-                h3("This app allows you..."),
+                h3("This app allows you determine the performace of a diagnostic test(s)."),
                 br(),
-                # tags$video(src = "SampleSizeCalcTut.mp4", type = "mp4", autoplay = F, controls = T,
-                #            width = "100%", poster = "sq_pad.png"),
+                tags$video(src = "DEADTut.mp4", type = "mp4", autoplay = F, controls = T,
+                            poster = "sq_pad.png",width = "100%"), #  height ="42%"
                 br(),
-                "This app is currently under development and indednded for use by members of CLII only",
-
+                "This app is currently under development and intended for use by members of CLII only.",
+                br(),
                 HTML(
                     '<a href="mailto:Jason.Limberis@uct.ac.za?
               body=""
-              &subject="Sample Size Calculator Suggestion">Please email if you want to request a specific test or have a suggestion.</a>'
+              &subject="DEAD Suggestion">Please email if you want to request a specific test or have a suggestion.</a>'
                 ),
                 br(),
-                "Calculations use the following packages: "
-                # tags$a(href="https://www.rdocumentation.org/packages/pwr/versions/1.2-2", "pwr, "),
-                # tags$a(href="https://www.rdocumentation.org/packages/samplingbook/versions/1.2.2", "samplingbook, "),
-                # tags$a(href="https://www.rdocumentation.org/packages/RnaSeqSampleSize/versions/1.4.2", "RnaSeqSampleSize, "),
-                # tags$a(href="https://www.rdocumentation.org/packages/Hmisc/versions/4.1-1", "Hmisc")
+                "Calculations use the following packages: ",
+                tags$a(href="https://www.rdocumentation.org/packages/epiR/versions/0.9-99", "epiR, "),
+                tags$a(href="https://www.rdocumentation.org/packages/DTComPair/versions/1.0.3", "DTComPair, "),
+                tags$a(href="https://www.rdocumentation.org/packages/epitools/versions/0.09", "epitools.")
         ),
 
 
@@ -268,7 +270,7 @@ body <- dashboardBody(
                               value='Binary_Outcome\tTest_Measurement\n0\t1.04020064033914\n1\t1.83311097391425\n0\t-0.144033552345583\n0\t-0.270598823329474\n1\t0.511717230024483\n1\t2.06696372908171\n0\t-0.543155753506823\n0\t0.00190374750531683\n0\t-0.375643283115991\n0\t-0.398665842316117\n1\t1.57300817770224\n0\t-0.534717588025751\n0\t1.14701516869888\n1\t1.10955041246104\n0\t0.851217272327907\n0\t-1.53604462374537\n1\t1.68380515251503\n1\t0.308179838422192\n0\t-1.45680935364301\n0\t0.108318448335247\n1\t1.35404558170149\n1\t0.43248744141443\n0\t-0.56467351273929\n0\t-0.946408909823568\n1\t0.736165002180433\n0\t1.00009611863722\n0\t0.756088823715481\n0\t0.620695503057128\n0\t0.00818870683472545\n1\t1.2752076278957\n0\t0.912592413849882\n1\t1.36352108223142\n0\t0.255035545332107\n1\t1.73770545332842\n1\t1.76315977579888\n1\t1.03175252100735\n1\t0.431647484457911\n1\t0.78630069212112\n0\t0.24763372645939\n0\t0.663548041645065\n1\t1.72905731629581\n1\t1.8519896176992\n0\t0.534982160411556\n1\t1.47758479712574\n1\t0.78905476878702\n0\t-0.43802655579879\n0\t-2.10991537547845\n0\t-0.00444067451819973\n0\t-0.999497500268568\n0\t-0.884728098633616\n0\t-0.285578915173303\n1\t0.445818894033849\n1\t0.156506255679849\n1\t0.614440257490603\n0\t-0.385195063645805\n0\t0.430277582938107\n1\t0.752068222263921\n0\t-0.639652560697203\n0\t-0.518540707547305\n1\t0.31752041285114\n1\t0.875919002659428\n0\t-0.149350650067123\n1\t0.745066597548203\n0\t0.125560058061372\n0\t0.586325831313102\n0\t0.162786148188314\n0\t-0.400054541288466\n0\t-0.633048265358359\n1\t0.573484420859957\n0\t1.23437504536218\n1\t1.33847231746514\n1\t1.20390414254367\n1\t1.11821977407611\n1\t1.02462988981841\n1\t1.24398979671444\n0\t0.799250462675709\n0\t0.431149373897686\n0\t0.976607386963819\n1\t0.411232505428758\n1\t1.03264061520594\n1\t0.414610332663507\n0\t-0.145669354852768\n0\t1.1637496956986\n1\t1.2638513513269\n0\t0.128435756734407\n1\t1.47816003172029\n1\t1.51696543445388\n0\t0.362422195982443\n0\t0.730151179948551\n0\t0.319879988545024\n1\t0.895614207638148\n0\t-0.162759844337421\n1\t-0.0571185638843614\n1\t0.914222811183992\n1\t0.171704562798926\n0\t-0.713118219170477\n1\t0.856239332642641\n1\t0.729381795996963\n1\t-0.397814592416522\n1\t1.12720381369141\n1\t0.301501568840812\n0\t0.32383613260016\n1\t0.959950656507807\n0\t-0.268360543842611\n0\t-0.534397374175856\n1\t0.474831008638435\n1\t1.41570741939695\n0\t0.157714396765198\n1\t0.385812954391714\n0\t0.595871012207413\n0\t-0.154081478207697\n1\t0.394232221812296\n1\t1.09930293040327\n0\t0.379581408810956\n1\t1.27560249003553\n1\t1.20378822379476\n1\t1.51057364238005\n0\t-0.398518723906593\n1\t1.01419554372281\n1\t0.111821257673198\n0\t-0.572091614556677\n0\t0.37210889797258\n0\t0.0344086323485963\n1\t1.94463055190526\n0\t0.637931089253936\n0\t-0.955297194950908\n0\t-0.346963568716593\n0\t0.485899102090022\n1\t1.9959222760624\n0\t0.374736195130339\n1\t1.47983890411873\n0\t-0.0237319804435941\n0\t0.340922666485959\n1\t2.24680618737367\n1\t0.646978690657485\n0\t-0.865646465914081\n1\t1.52302256356239\n1\t0.441357814812996\n0\t-0.956171722135821\n0\t-0.564641306828936\n0\t-0.158901873658287\n0\t-0.0184350511960584\n0\t0.77628421565948\n1\t0.969300652111354\n1\t1.0247727667547\n1\t1.53694771893874\n1\t2.48327218041238\n1\t1.04207327683692\n1\t0.683062521635454\n1\t-0.254127335881163\n1\t1.70980153025112\n0\t-0.125896368364301\n0\t1.16869380586746\n1\t2.45637884974025\n1\t0.775314215858415\n0\t0.191094547752889\n1\t1.34433186390572\n1\t0.105977790000903\n1\t2.29162560686501\n1\t0.383882224391957\n1\t0.680974835281014\n1\t0.645110094825933\n1\t-1.00336927062398\n0\t-0.240559619669408\n1\t2.03353594443969\n1\t2.1001714438645\n1\t2.00444828108794\n1\t1.4311945563476\n1\t0.310775902660666\n1\t-0.0160167868294057\n1\t-0.105701850723356\n0\t-0.246599907726367\n0\t0.0717166081171206\n0\t0.175267133251754\n0\t0.383572536495523\n0\t-0.0229538425354207\n0\t-0.466203731192325\n0\t-0.0257841950133965\n1\t0.466794439840599\n1\t1.29741169059447\n0\t-0.196034808337352\n1\t-0.00928543556179706\n1\t1.27753409802778\n1\t0.691842928628322\n1\t2.16541609232687\n0\t0.237728983418603\n0\t0.932283926677191\n0\t-1.16663269417225\n0\t0.657587555556791\n1\t0.344359281661996\n1\t1.47387679253299\n0\t0.578170154853085\n1\t0.952407090496505\n1\t1.91984981873486\n0\t0.134340070515655\n1\t0.772540624935611\n0\t-1.08651841554356\n1\t0.200005062594272\n0\t-0.95659307039884\n0\t-0.127096708593605\n',
                               mode="r", height = "300px", fontSize = 14)),
 
-                box(title = "Enter Data (tab seperated, you can copy paste from excel)", collapsible = T, collapsed = F, width = 6, height = "300px",
+                box(title = "Data Entered", collapsible = T, collapsed = T, width = 6, height = "300px",
                     verbatimTextOutput("ROCdt"))
 
         ),
