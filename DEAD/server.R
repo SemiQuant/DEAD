@@ -143,12 +143,32 @@ shinyServer(function(input, output, session){
             row.names = NULL
         )
         res.car.edit[8, "p.value"] <- res.car$overall["AccuracyPValue"]
+
+        if (input$roundDT1){
+            ep.res$est <- round(ep.res$est, 2)
+            ep.res$lower <- round(ep.res$lower, 2)
+            ep.res$upper <- round(ep.res$upper, 2)
+            res.car.edit$Estimate <- round(res.car.edit$Estimate, 2)
+        }
+
+        NIR <- res.car.edit[8, ]
+        res.car.edit <- res.car.edit[-8,]
+
+
+        output$NIR <- renderPrint(
+            paste0(
+            "No Information Rate [NIR] = ", NIR["Estimate"],
+            ", p.value=", NIR["p.value"])
+        )
+
+
+
         #
         # dat.tbl.eprF <- tab.1test(d=Disease, y=Test, data=dat)
         # acc.1test(dat.tbl.eprF, 1-confInt)
         colnames(ep.res) <- colnames(res.car.edit)
         row.names(ep.res) <- NULL
-        DT::datatable(rbind(ep.res, res.car.edit), options = list(pageLength = 21))
+        DT::datatable(rbind(ep.res, res.car.edit)[c(1:4)], options = list(pageLength = 20))
 
     })
 
@@ -374,8 +394,8 @@ shinyServer(function(input, output, session){
     #########
     ROCinputData <- reactive({
         dat <- read.csv(text=input$roc_input, sep="", na.strings=c("","NA","."))
-        rownames(dat) <- dat[,1]
-        dat <- dat[,-c(1)]
+        # rownames(dat) <- dat[,1]
+        # dat <- dat[,-c(1)]
         colnames(dat) <- c("Outcome", "Measurement")
 
         dat[c(1:2)]
