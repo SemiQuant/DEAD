@@ -469,6 +469,7 @@ shinyServer(function(input, output, session){
 
     output$ROCdt <- renderPrint({
         dat <- ROCinputData()
+
         if (length(unique(dat$Outcome)) != 2){
             print("Outcome not Binary!")
         }else{
@@ -478,6 +479,7 @@ shinyServer(function(input, output, session){
                                         " = 0 and ", slev[2], " = 1!"), duration = NULL)
             }
         }
+        dat
     })
 
     output$ROCplot <- renderUI({
@@ -516,14 +518,26 @@ shinyServer(function(input, output, session){
                     theme(panel.background = element_rect(fill="#fef7ea", colour="#fef7ea"),
                           plot.background = element_rect(fill = "#fef7ea"))
 
-            incProgress(2/2, detail = paste("Plotting"))
+                incProgress(2/2, detail = paste("Plotting"))
             })
         }
-            if (input$plot_xkcd)
-                HTML(export_interactive_roc(p + theme_xkcd())) # p + theme_xkcd() #
-            else
-                HTML(export_interactive_roc(p,
-                                            width = 18, height = 10)) #p
+        if (input$plot_xkcd)
+            HTML(export_interactive_roc(p + theme_xkcd())) # p + theme_xkcd() #
+        else
+            HTML(export_interactive_roc(p,
+                                        width = 18, height = 10)) #p
+    })
+
+
+
+    observeEvent(input$sidebarmenu, {
+        if (input$sidebarmenu == "cite")
+            showModal(modalDialog(
+                title = "Citation",
+                paste0("Limberis, JD. 2018.", "DEAD: ", "[Online]. Available at: ", "https://semiquant.shinyapps.io/DEAD/", "(Accessed: ", Sys.Date(), ")"),
+                easyClose = TRUE,
+                footer = NULL
+            ))
     })
 
 })

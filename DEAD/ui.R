@@ -179,6 +179,8 @@ sidebar <- dashboardSidebar(
                                      checkboxInput("plot_xkcd", "Plot xkcd", value = F)
                     ),
 
+                    menuItem("Cite", icon = icon("info"), tabName = "cite"
+                             ),
 
                     menuItem("Website", icon = icon("chrome"),
                              href = "http://www.semiquant.com")
