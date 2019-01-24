@@ -21,7 +21,8 @@ require(DTComPair)
 require(epitools)
 require(tidyverse)
 require(plotly)
-
+require(reshape2)
+require(pROC)
 
 # TODO
 # Make all outputs from diganostic test against gold standard - need to add pvalues
@@ -147,6 +148,8 @@ shinyServer(function(input, output, session){
         res.car.edit[8, "p.value"] <- res.car$overall["AccuracyPValue"]
 
         if (input$roundDT1){
+            # ep.res[ep.res$Test == "Number Needed to Diagnose", c(2:4)] <- ceiling(ep.res[ep.res$Test == "Number Needed to Diagnose", c(2:4)])
+
             ep.res$est <- round(ep.res$est, 2)
             ep.res$lower <- round(ep.res$lower, 2)
             ep.res$upper <- round(ep.res$upper, 2)
@@ -159,8 +162,8 @@ shinyServer(function(input, output, session){
 
         output$NIR <- renderPrint(
             paste0(
-            "No Information Rate [NIR] = ", NIR["Estimate"],
-            ", p.value=", NIR["p.value"])
+                "No Information Rate [NIR] = ", NIR["Estimate"],
+                ", p.value=", NIR["p.value"])
         )
 
         colnames(ep.res) <- colnames(res.car.edit)
@@ -214,7 +217,6 @@ shinyServer(function(input, output, session){
         ptab <- dlr.results <- res <- spec.tmp <- NULL
         ptab <- tab.paired(d=GoldStandard, y1=Test1, y2=Test2, data=dat)
         output$ptabA <- renderPrint(print(ptab))
-
 
         dlr.results <- dlr.regtest(ptab, alpha = 1-confInt)
         # null hypothesis rDLR = DLR of Test 1 / DLR of Test 2 = 1
@@ -334,8 +336,6 @@ shinyServer(function(input, output, session){
 
 
 
-
-
         spec.tmp <- data.frame(spec.tmp[,c(1,2,3,5,4)])
         spec.tmp$Method <- "McNemar"
         spec.tmp2 <- data.frame(spec.tmp2)
@@ -395,12 +395,12 @@ shinyServer(function(input, output, session){
         res2 <- res2[-c(6, 8)]
         res2 <- res2[c(1,6,2,3,4,5,7,8)]
 
-    #     comb$LCI <- NA
-    #     comb$UCI <- NA
-    #     colnames(comb)[7:8] <- c("Lower Conficence Interval", "Upper Conficence Interval")
-    # comb <<- rbind(comb, res2)
+        #     comb$LCI <- NA
+        #     comb$UCI <- NA
+        #     colnames(comb)[7:8] <- c("Lower Conficence Interval", "Upper Conficence Interval")
+        # comb <<- rbind(comb, res2)
 
-# test1<<-comb
+        # test1<<-comb
         output$ptab1 <- renderPrint(print(res.tmp.A))
         output$ptab3 <- renderDataTable(
             datatable(comb, selection = 'none')
@@ -446,43 +446,80 @@ shinyServer(function(input, output, session){
     #########
     ROCinputData <- reactive({
         dat <- read.csv(text=input$roc_input, sep="", na.strings=c("","NA","."))
-        # rownames(dat) <- dat[,1]
-        # dat <- dat[,-c(1)]
-        colnames(dat) <- c("Outcome", "Measurement")
 
-        dat[c(1:2)]
-    })
-
-    output$ROCdt <- renderPrint({
-        dat <- ROCinputData()
-        if (length(unique(dat$Outcome)) != 2)
+        colnames(dat)[1] <- "Outcome"
+        if (length(unique(dat$Outcome)) != 2){
             print("Outcome not Binary!")
-        else{
+        }else{
             if (any(!unique(dat$Outcome)%in%c(0,1))){
                 slev <- sort(levels(as.factor(dat$Outcome)))
                 showNotification(paste0("Outcome not labeled 0/1, assuming ", slev[1],
                                         " = 0 and ", slev[2], " = 1!"), duration = NULL)
             }
-            dat[c(1,2)]
+        }
+
+        if (ncol(dat) <=2){
+            colnames(dat) <- c("Outcome", "Test1")
+            dat[c(1:2)]
+        }else{
+            colnames(dat) <- c("Outcome", "Test1", "Test2")
+            dat[c(1:3)]
         }
     })
 
-    output$ROCplot <- renderPlot({
+    output$ROCdt <- renderPrint({
         dat <- ROCinputData()
-        txt <- roc(Outcome ~ Measurement, dat, smooth=TRUE)
+        if (length(unique(dat$Outcome)) != 2){
+            print("Outcome not Binary!")
+        }else{
+            if (any(!unique(dat$Outcome)%in%c(0,1))){
+                slev <- sort(levels(as.factor(dat$Outcome)))
+                showNotification(paste0("Outcome not labeled 0/1, assuming ", slev[1],
+                                        " = 0 and ", slev[2], " = 1!"), duration = NULL)
+            }
+        }
+    })
 
-        last.message <- NULL
-        p <- tryCatch(
-            ggplot(dat, aes(d = Outcome, m = Measurement)) + geom_roc() + style_roc() +
-                annotate("text", label = paste0("AUC: ", round(txt$auc,2)), y=0.25, x=0.75)+
+    output$ROCplot <- renderUI({
+        dat <- ROCinputData()
+
+        if (ncol(dat) <=2){
+            txt <- roc(Outcome ~ Test1, dat, smooth=TRUE)
+
+            last.message <- NULL
+            p <- tryCatch(
+                ggplot(dat, aes(d = Outcome, m = Test1)) + geom_roc() + style_roc() +
+                    annotate("text", label = paste0("AUC: ", round(txt$auc,2)), y=0.25, x=0.75)+
+                    theme(panel.background = element_rect(fill="#fef7ea", colour="#fef7ea"),
+                          plot.background = element_rect(fill = "#fef7ea"))
+            )
+        }else{
+            # txt1 <- roc(Outcome ~ Test1, dat, smooth=TRUE)
+            # txt2 <- roc(Outcome ~ Test2, dat, smooth=TRUE)
+            txt1.CI <- roc(dat$Outcome, dat$Test1, ci = TRUE)
+            txt1 <- paste0(round(txt1.CI$ci[2], 2), " (95% CI=", round(txt1.CI$ci[1], 2), ", ", round(txt1.CI$ci[3], 2), ")")
+            txt2.CI <- roc(dat$Outcome, dat$Test2, ci = TRUE)
+            txt2 <- paste0(round(txt2.CI$ci[2], 2), " (95% CI=", round(txt2.CI$ci[1], 2), ", ", round(txt2.CI$ci[3], 2), ")")
+            roc.p <- roc.test(txt1.CI, txt2.CI)
+
+
+            dat.long <- melt(dat, id.vars="Outcome")
+            colnames(dat.long) <- c("Outcome", "Test", "Measurement")
+            p <- ggplot(dat.long, aes(d = Outcome, m = Measurement, color = Test)) + geom_roc(show.legend = F)
+            p <- direct_label(p) + style_roc() +
+                annotate("text", label = paste0("AUC\nTest 1: ", txt1, "\nTest 2: ", txt2),
+                         y=0.25, x=0.75)+
+                annotate("text", label = paste0("p.value (bootstrap test):\n", roc.p$p.value),
+                         y=0.15, x=0.75)+
                 theme(panel.background = element_rect(fill="#fef7ea", colour="#fef7ea"),
                       plot.background = element_rect(fill = "#fef7ea"))
-        )
-        if (input$plot_xkcd)
-            p + theme_xkcd()
-        else
-            p
+        }
 
+        if (input$plot_xkcd)
+            HTML(export_interactive_roc(p + theme_xkcd())) # p + theme_xkcd() #
+        else
+            HTML(export_interactive_roc(p,
+                                        width = 18, height = 10)) #p
     })
 
 })
