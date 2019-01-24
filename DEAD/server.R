@@ -496,30 +496,34 @@ shinyServer(function(input, output, session){
         }else{
             # txt1 <- roc(Outcome ~ Test1, dat, smooth=TRUE)
             # txt2 <- roc(Outcome ~ Test2, dat, smooth=TRUE)
-            txt1.CI <- roc(dat$Outcome, dat$Test1, ci = TRUE)
-            txt1 <- paste0(round(txt1.CI$ci[2], 2), " (95% CI=", round(txt1.CI$ci[1], 2), ", ", round(txt1.CI$ci[3], 2), ")")
-            txt2.CI <- roc(dat$Outcome, dat$Test2, ci = TRUE)
-            txt2 <- paste0(round(txt2.CI$ci[2], 2), " (95% CI=", round(txt2.CI$ci[1], 2), ", ", round(txt2.CI$ci[3], 2), ")")
-            roc.p <- roc.test(txt1.CI, txt2.CI)
+            withProgress(message = 'Calculating CIs', value = 0, {
+                incProgress(1/2, detail = paste("Bootstrapping"))
+                txt1.CI <- roc(dat$Outcome, dat$Test1, ci = TRUE)
+                txt1 <- paste0(round(txt1.CI$ci[2], 2), " (95% CI=", round(txt1.CI$ci[1], 2), ", ", round(txt1.CI$ci[3], 2), ")")
+                txt2.CI <- roc(dat$Outcome, dat$Test2, ci = TRUE)
+                txt2 <- paste0(round(txt2.CI$ci[2], 2), " (95% CI=", round(txt2.CI$ci[1], 2), ", ", round(txt2.CI$ci[3], 2), ")")
+                roc.p <- roc.test(txt1.CI, txt2.CI)
 
 
-            dat.long <- melt(dat, id.vars="Outcome")
-            colnames(dat.long) <- c("Outcome", "Test", "Measurement")
-            p <- ggplot(dat.long, aes(d = Outcome, m = Measurement, color = Test)) + geom_roc(show.legend = F)
-            p <- direct_label(p) + style_roc() +
-                annotate("text", label = paste0("AUC\nTest 1: ", txt1, "\nTest 2: ", txt2),
-                         y=0.25, x=0.75)+
-                annotate("text", label = paste0("p.value (bootstrap test):\n", roc.p$p.value),
-                         y=0.15, x=0.75)+
-                theme(panel.background = element_rect(fill="#fef7ea", colour="#fef7ea"),
-                      plot.background = element_rect(fill = "#fef7ea"))
+                dat.long <- melt(dat, id.vars="Outcome")
+                colnames(dat.long) <- c("Outcome", "Test", "Measurement")
+                p <- ggplot(dat.long, aes(d = Outcome, m = Measurement, color = Test)) + geom_roc(show.legend = F)
+                p <- direct_label(p) + style_roc() +
+                    annotate("text", label = paste0("AUC\nTest 1: ", txt1, "\nTest 2: ", txt2),
+                             y=0.25, x=0.75)+
+                    annotate("text", label = paste0("p.value (bootstrap test):\n", roc.p$p.value),
+                             y=0.15, x=0.75)+
+                    theme(panel.background = element_rect(fill="#fef7ea", colour="#fef7ea"),
+                          plot.background = element_rect(fill = "#fef7ea"))
+
+            incProgress(2/2, detail = paste("Plotting"))
+            })
         }
-
-        if (input$plot_xkcd)
-            HTML(export_interactive_roc(p + theme_xkcd())) # p + theme_xkcd() #
-        else
-            HTML(export_interactive_roc(p,
-                                        width = 18, height = 10)) #p
+            if (input$plot_xkcd)
+                HTML(export_interactive_roc(p + theme_xkcd())) # p + theme_xkcd() #
+            else
+                HTML(export_interactive_roc(p,
+                                            width = 18, height = 10)) #p
     })
 
 })
