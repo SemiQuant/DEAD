@@ -90,9 +90,9 @@ shinyServer(function(input, output, session){
             print(binom.test(c(RCinputData()[1,1], sum(RCinputData())), p = 0.5))
         }else{
             if (input$CC)
-                print(mcnemar.test(RCinputData()), correct = FALSE)
+                print(mcnemar.test(RCinputData()), correct = F)
             else
-                print(mcnemar.test(RCinputData()), correct = TRUE)
+                print(mcnemar.test(RCinputData()), correct = T)
         }
     })
 

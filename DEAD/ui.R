@@ -150,9 +150,9 @@ sidebar <- dashboardSidebar(
                              convertMenuItem(
                              menuItem("One Test and Gold Standard", tabName = "DiagTAB1",
                              # conditionalPanel("input.sidebarmenu === 'DiagTAB1'",
-                                              menuItem("Enter data below using tab seperation:"),
+                                              "Enter data below using tab seperation:",
                                               aceEditor("dtp_input",  theme = "idle_fingers",
-                                                        value='Res \tPositive\tNegative\nPositive\t13\t12\nNegative\t41\t33', mode="r", height = "150px", fontSize = 14),
+                                                        value='Res \tPositive\tNegative\nPositive\t13\t12\nNegative\t41\t33', mode="r", height = "150px", fontSize = 13),
                                               checkboxInput("longIn", "Use Long Input Format (see box in panel to the right)")
                              ), "DiagTAB1"),
                              menuItem("Two Tests and Gold Standard", tabName = "DiagTAB2")
@@ -161,9 +161,9 @@ sidebar <- dashboardSidebar(
                     convertMenuItem(
                     menuItem("Contigency (RxC) Tables", tabName = "ChiTab",
                     # conditionalPanel("input.sidebarmenu === 'ChiTab'",
-                                     menuItem("Enter data below using tab seperation:"),
+                                     "Enter data below using tab seperation:",
                                      aceEditor("rc_input",  theme = "idle_fingers",
-                                               value='Res \tPositive\tNegative\nPositive\t13\t21\nNegative\t51\t9', mode="r", height = "150px", fontSize = 14),
+                                               value='Res \tPositive\tNegative\nPositive\t13\t21\nNegative\t51\t9', mode="r", height = "150px", fontSize = 13),
                                      checkboxInput("CC", "Use Continuity Correction")
                     ), "ChiTab"
                     ),
