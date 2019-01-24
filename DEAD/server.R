@@ -482,51 +482,170 @@ shinyServer(function(input, output, session){
         dat
     })
 
-    output$ROCplot <- renderUI({
+    # output$ROCplot <- renderUI({
+    #     dat <- ROCinputData()
+    #
+    #     if (ncol(dat) <=2){
+    #         txt <- roc(Outcome ~ Test1, dat, smooth=TRUE)
+    #
+    #         last.message <- NULL
+    #         p <- tryCatch(
+    #             ggplot(dat, aes(d = Outcome, m = Test1)) + geom_roc() + style_roc() +
+    #                 annotate("text", label = paste0("AUC: ", round(txt$auc,2)), y=0.25, x=0.75)+
+    #                 theme(panel.background = element_rect(fill="#fef7ea", colour="#fef7ea"),
+    #                       plot.background = element_rect(fill = "#fef7ea"))
+    #         )
+    #     }else{
+    #         # txt1 <- roc(Outcome ~ Test1, dat, smooth=TRUE)
+    #         # txt2 <- roc(Outcome ~ Test2, dat, smooth=TRUE)
+    #         withProgress(message = 'Calculating CIs', value = 0, {
+    #             incProgress(1/2, detail = paste("Bootstrapping"))
+                # txt1.CI <- roc(dat$Outcome, dat$Test1, ci = TRUE)
+                # txt1 <- paste0(round(txt1.CI$ci[2], 2), " (95% CI=", round(txt1.CI$ci[1], 2), ", ", round(txt1.CI$ci[3], 2), ")")
+                # txt2.CI <- roc(dat$Outcome, dat$Test2, ci = TRUE)
+                # txt2 <- paste0(round(txt2.CI$ci[2], 2), " (95% CI=", round(txt2.CI$ci[1], 2), ", ", round(txt2.CI$ci[3], 2), ")")
+                # roc.p <- roc.test(txt1.CI, txt2.CI)
+    #
+    #             dat.long <- melt(dat, id.vars="Outcome")
+    #             colnames(dat.long) <- c("Outcome", "Test", "Measurement")
+    #             p <- ggplot(dat.long, aes(d = Outcome, m = Measurement, color = Test)) + geom_roc(show.legend = F)
+    #             p <- direct_label(p) + style_roc() +
+    #                 annotate("text", label = paste0("AUC\nTest 1: ", txt1, "\nTest 2: ", txt2),
+    #                          y=0.25, x=0.75)+
+    #                 annotate("text", label = paste0("p.value (bootstrap test):\n", roc.p$p.value),
+    #                          y=0.15, x=0.75)+
+    #                 theme(panel.background = element_rect(fill="#fef7ea", colour="#fef7ea"),
+    #                       plot.background = element_rect(fill = "#fef7ea"))
+    #
+    #             incProgress(2/2, detail = paste("Plotting"))
+    #         })
+    #     }
+    #     if (input$plot_xkcd)
+    #         HTML(export_interactive_roc(p + theme_xkcd())) # p + theme_xkcd() #
+    #     else
+    #         HTML(export_interactive_roc(p,
+    #                                     width = 18, height = 10)) #p
+    # })
+    #
+    #
+
+    output$ROCplotly <- renderPlotly({
         dat <- ROCinputData()
 
         if (ncol(dat) <=2){
-            txt <- roc(Outcome ~ Test1, dat, smooth=TRUE)
-
-            last.message <- NULL
+            txt.CI <- roc(Outcome ~ Test1, dat, smooth=input$smooth, ci = TRUE)
             p <- tryCatch(
-                ggplot(dat, aes(d = Outcome, m = Test1)) + geom_roc() + style_roc() +
-                    annotate("text", label = paste0("AUC: ", round(txt$auc,2)), y=0.25, x=0.75)+
-                    theme(panel.background = element_rect(fill="#fef7ea", colour="#fef7ea"),
-                          plot.background = element_rect(fill = "#fef7ea"))
+                plot_ly(x = 1-txt.CI$specificities, y = txt.CI$sensitivities, name = 'Test', type = 'scatter', mode = 'lines') %>%
+                    layout(#title = 'ROC Curve',
+                        xaxis = list(title = 'False Positive Rate',
+                                     zeroline = TRUE,
+                                     range = c(0, 1),
+                                     tickvals=c(seq(0, 0.09, 0.01), c(0.1, 0.25, 0.5, 0.75, 0.9, 1), seq(0.9, 1, 0.01)),
+                                     ticktext=c(rep("", 10), c(0.1, 0.25, 0.50, 0.75, 0.90, 1.00), rep("", 11))
+                        ),
+                        yaxis = list(title = 'True Positive Rate',
+                                     range = c(0,1),
+                                     tickvals=c(seq(0, 0.09, 0.01), c(0.1, 0.25, 0.5, 0.75, 0.9, 1), seq(0.9, 1, 0.01)),
+                                     ticktext=c(rep("", 10), c(0.1, 0.25, 0.50, 0.75, 0.90, 1.00), rep("", 11))
+                        ))%>%layout(
+                            plot_bgcolor="#fef7ea",
+                            paper_bgcolor ="#fef7ea",
+                            legend = list(
+                                x = 0.6, y = 0.4,
+                                font = list(
+                                    family = "sans-serif",
+                                    size = 12,
+                                    color = "#000"),
+                                bgcolor = "#E2E2E2",
+                                bordercolor = "#FFFFFF",
+                                borderwidth = 2)
+                        )%>% layout(shapes = list(
+                            type = "line",
+                            x0 = 0,
+                            x1 = 1,
+                            y0 = 0,
+                            y1 = 1,
+                            line = list(color = "white")
+                        ))
             )
         }else{
-            # txt1 <- roc(Outcome ~ Test1, dat, smooth=TRUE)
-            # txt2 <- roc(Outcome ~ Test2, dat, smooth=TRUE)
             withProgress(message = 'Calculating CIs', value = 0, {
                 incProgress(1/2, detail = paste("Bootstrapping"))
-                txt1.CI <- roc(dat$Outcome, dat$Test1, ci = TRUE)
+                txt1.CI <- roc(dat$Outcome, dat$Test1, ci = TRUE, smooth = input$smooth)
                 txt1 <- paste0(round(txt1.CI$ci[2], 2), " (95% CI=", round(txt1.CI$ci[1], 2), ", ", round(txt1.CI$ci[3], 2), ")")
-                txt2.CI <- roc(dat$Outcome, dat$Test2, ci = TRUE)
+                txt2.CI <- roc(dat$Outcome, dat$Test2, ci = TRUE, smooth = input$smooth)
                 txt2 <- paste0(round(txt2.CI$ci[2], 2), " (95% CI=", round(txt2.CI$ci[1], 2), ", ", round(txt2.CI$ci[3], 2), ")")
                 roc.p <- roc.test(txt1.CI, txt2.CI)
 
+                p <- plot_ly(x = 1-txt1.CI$specificities, y = txt1.CI$sensitivities, name = 'Test 1', type = 'scatter', mode = 'lines') %>%
+                    add_trace(x = 1-txt2.CI$specificities, y = txt2.CI$sensitivities, name = 'Test 2', mode = 'lines') %>%
+                    layout(#title = 'ROC Curve',
+                           xaxis = list(title = 'False Positive Rate',
+                                        zeroline = TRUE,
+                                        range = c(0, 1),
+                                        tickvals=c(seq(0, 0.09, 0.01), c(0.1, 0.25, 0.5, 0.75, 0.9, 1), seq(0.9, 1, 0.01)),
+                                        ticktext=c(rep("", 10), c(0.1, 0.25, 0.50, 0.75, 0.90, 1.00), rep("", 11))
+                           ),
+                           yaxis = list(title = 'True Positive Rate',
+                                        range = c(0,1),
+                                        tickvals=c(seq(0, 0.09, 0.01), c(0.1, 0.25, 0.5, 0.75, 0.9, 1), seq(0.9, 1, 0.01)),
+                                        ticktext=c(rep("", 10), c(0.1, 0.25, 0.50, 0.75, 0.90, 1.00), rep("", 11))
+                           ),
+                           annotations = list(
+                               y=0.25, x=0.75,
+                               text = paste0("AUC\nTest 1: ", txt1, "\nTest 2: ", txt2),
+                               xref = "x",
+                               yref = "y",
+                               showarrow = F
+                           ))%>%
+                    layout(annotations = list(
+                        y=0.15, x=0.75,
+                        text = paste0("p.value (bootstrap test):\n", roc.p$p.value),
+                        xref = "x",
+                        yref = "y",
+                        showarrow = F
+                    )
+                    )%>%layout(
+                        plot_bgcolor="#fef7ea",
+                        paper_bgcolor ="#fef7ea",
+                        legend = list(
+                            x = 0.6, y = 0.4,
+                            font = list(
+                                family = "sans-serif",
+                                size = 12,
+                                color = "#000"),
+                            bgcolor = "#E2E2E2",
+                            bordercolor = "#FFFFFF",
+                            borderwidth = 2)
+                    )%>% layout(shapes = list(
+                        type = "line",
+                        x0 = 0,
+                        x1 = 1,
+                        y0 = 0,
+                        y1 = 1,
+                        line = list(color = "white")
+                    ))
 
-                dat.long <- melt(dat, id.vars="Outcome")
-                colnames(dat.long) <- c("Outcome", "Test", "Measurement")
-                p <- ggplot(dat.long, aes(d = Outcome, m = Measurement, color = Test)) + geom_roc(show.legend = F)
-                p <- direct_label(p) + style_roc() +
-                    annotate("text", label = paste0("AUC\nTest 1: ", txt1, "\nTest 2: ", txt2),
-                             y=0.25, x=0.75)+
-                    annotate("text", label = paste0("p.value (bootstrap test):\n", roc.p$p.value),
-                             y=0.15, x=0.75)+
-                    theme(panel.background = element_rect(fill="#fef7ea", colour="#fef7ea"),
-                          plot.background = element_rect(fill = "#fef7ea"))
+
 
                 incProgress(2/2, detail = paste("Plotting"))
             })
         }
-        if (input$plot_xkcd)
-            HTML(export_interactive_roc(p + theme_xkcd())) # p + theme_xkcd() #
-        else
-            HTML(export_interactive_roc(p,
-                                        width = 18, height = 10)) #p
+        # if (input$plot_xkcd)
+        #     p + theme_xkcd() #
+        # else
+            p
     })
+
+
+
+
+
+
+
+
+
+
 
 
 

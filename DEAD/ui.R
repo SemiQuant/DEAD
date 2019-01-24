@@ -148,39 +148,39 @@ sidebar <- dashboardSidebar(
 
                     menuItem("Diagnostic Test Performance", tabName = "DT",
                              convertMenuItem(
-                             menuItem("One Test and Gold Standard", tabName = "DiagTAB1",
-                             # conditionalPanel("input.sidebarmenu === 'DiagTAB1'",
-                                              "Enter data below using tab seperation:",
-                                              aceEditor("dtp_input",  theme = "idle_fingers",
-                                                        value='Res \tPositive\tNegative\nPositive\t13\t12\nNegative\t41\t33', mode="r", height = "150px", fontSize = 13),
-                                              checkboxInput("longIn", "Use Long Input Format (see box in panel to the right)")
-                             ), "DiagTAB1"),
+                                 menuItem("One Test and Gold Standard", tabName = "DiagTAB1",
+                                          # conditionalPanel("input.sidebarmenu === 'DiagTAB1'",
+                                          "Enter data below using tab seperation:",
+                                          aceEditor("dtp_input",  theme = "idle_fingers",
+                                                    value='Res \tPositive\tNegative\nPositive\t13\t12\nNegative\t41\t33', mode="r", height = "150px", fontSize = 13),
+                                          checkboxInput("longIn", "Use Long Input Format (see box in panel to the right)")
+                                 ), "DiagTAB1"),
                              menuItem("Two Tests and Gold Standard", tabName = "DiagTAB2")
                     ),
 
                     convertMenuItem(
-                    menuItem("Contigency (RxC) Tables", tabName = "ChiTab",
-                    # conditionalPanel("input.sidebarmenu === 'ChiTab'",
-                                     "Enter data below using tab seperation:",
-                                     aceEditor("rc_input",  theme = "idle_fingers",
-                                               value='Res \tPositive\tNegative\nPositive\t13\t21\nNegative\t51\t9', mode="r", height = "150px", fontSize = 13),
-                                     checkboxInput("CC", "Use Continuity Correction")
-                    ), "ChiTab"
+                        menuItem("Contigency (RxC) Tables", tabName = "ChiTab",
+                                 # conditionalPanel("input.sidebarmenu === 'ChiTab'",
+                                 "Enter data below using tab seperation:",
+                                 aceEditor("rc_input",  theme = "idle_fingers",
+                                           value='Res \tPositive\tNegative\nPositive\t13\t21\nNegative\t51\t9', mode="r", height = "150px", fontSize = 13),
+                                 checkboxInput("CC", "Use Continuity Correction")
+                        ), "ChiTab"
                     ),
-
-                    menuItem("ROC curve", tabName = "RocTAB"),
-                    conditionalPanel("input.sidebarmenu === 'RocTAB'"
+                    convertMenuItem(
+                        menuItem("ROC curve", tabName = "RocTAB",
+                                 checkboxInput("smooth", "Smooth ROC?", value = T)
+                        ), "RocTAB"
                     ),
-                    # ),
 
                     menuItem("A confusion matrix", tabName = "CM", icon = icon("info")),
 
-                    conditionalPanel("input.sidebarmenu !== 'dashboard'",
-                                     checkboxInput("plot_xkcd", "Plot xkcd", value = F)
-                    ),
+                    # conditionalPanel("input.sidebarmenu !== 'dashboard'",
+                    #                  checkboxInput("plot_xkcd", "Plot xkcd", value = F)
+                    # ),
 
                     menuItem("Cite", icon = icon("info"), tabName = "cite"
-                             ),
+                    ),
 
                     menuItem("Website", icon = icon("chrome"),
                              href = "http://www.semiquant.com")
@@ -286,7 +286,8 @@ body <- dashboardBody(
         tabItem(tabName = "RocTAB",
                 h4("Basic ROC curve (more options will be added in future)"),
                 h5("You can enter data for one or two tests (plus the reference standard)"),
-                htmlOutput("ROCplot"),
+                # htmlOutput("ROCplot"),
+                plotlyOutput("ROCplotly"),
                 # h4("Results (if any cell contains a value less than 5, Fishers Exact test is performed as opposed to Persons Chi Square"),
                 box(title = "Enter Data (tab seperated)", collapsible = T, collapsed = F, width = 6,
                     aceEditor("roc_input", theme = "idle_fingers",
