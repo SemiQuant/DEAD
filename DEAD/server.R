@@ -568,6 +568,20 @@ shinyServer(function(input, output, session){
                             line = list(color = "white")
                         ))
             )
+            try({
+                if(input$ci){
+                    ci.sp.obj <- ci.sp(txt.CI, sensitivities=seq(0, 1, .01), boot.n=100)
+                    ci.sp.obj <- data.frame(ci.sp.obj)
+                    ci.sp.obj$Sensitivity <- rownames(ci.sp.obj)
+                    p <- p%>%
+                        add_trace(y = ci.sp.obj$Sensitivity, x = 1-ci.sp.obj$X2.5., type = 'scatter', mode = 'lines',
+                                  line = list(color = '#dff7ff',opacity=0.05),
+                                  showlegend = FALSE)%>%
+                        add_trace(y = ci.sp.obj$Sensitivity, x = 1-ci.sp.obj$X97.5., type = 'scatter', mode = 'lines',
+                                  fill = 'tonexty', fillcolor=list(color='#dff7ff',opacity=0.05), line = list(color = '#dff7ff',opacity=0.05),
+                                  showlegend = FALSE)
+                }
+            })
         }else{
             withProgress(message = 'Calculating CIs', value = 0, {
                 incProgress(1/2, detail = paste("Bootstrapping"))
@@ -627,6 +641,28 @@ shinyServer(function(input, output, session){
                     ))
 
 
+                if(input$ci){
+                    ci.sp.obj1 <- ci.sp(txt1.CI, sensitivities=seq(0, 1, .01), boot.n=100)
+                    ci.sp.obj1 <- data.frame(ci.sp.obj1)
+                    ci.sp.obj1$Sensitivity <- rownames(ci.sp.obj1)
+                    p <- p%>%
+                        add_trace(y = ci.sp.obj1$Sensitivity, x = 1-ci.sp.obj1$X2.5., type = 'scatter', mode = 'lines',
+                                  line = list(color = '#dff7ff',opacity=0.05),
+                                  showlegend = FALSE)%>%
+                        add_trace(y = ci.sp.obj1$Sensitivity, x = 1-ci.sp.obj1$X97.5., type = 'scatter', mode = 'lines',
+                                  fill = 'tonexty', fillcolor=list(color='#dff7ff',opacity=0.05), line = list(color = '#dff7ff',opacity=0.05),
+                                  showlegend = FALSE)
+                    ci.sp.obj2 <- ci.sp(txt2.CI, sensitivities=seq(0, 1, .01), boot.n=100)
+                    ci.sp.obj2 <- data.frame(ci.sp.obj2)
+                    ci.sp.obj2$Sensitivity <- rownames(ci.sp.obj2)
+                    p <- p%>%
+                        add_trace(y = ci.sp.obj2$Sensitivity, x = 1-ci.sp.obj2$X2.5., type = 'scatter', mode = 'lines',
+                                  line = list(color = '#ffd394',opacity=0.05),
+                                  showlegend = FALSE)%>%
+                        add_trace(y = ci.sp.obj2$Sensitivity, x = 1-ci.sp.obj2$X97.5., type = 'scatter', mode = 'lines',
+                                  fill = 'tonexty', fillcolor=list(color='#ffd394',opacity=0.05), line = list(color = '#ffd394',opacity=0.05),
+                                  showlegend = FALSE)
+                }
 
                 incProgress(2/2, detail = paste("Plotting"))
             })

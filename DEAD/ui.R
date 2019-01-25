@@ -169,7 +169,8 @@ sidebar <- dashboardSidebar(
                     ),
                     convertMenuItem(
                         menuItem("ROC curve", tabName = "RocTAB",
-                                 checkboxInput("smooth", "Smooth ROC?", value = T)
+                                 checkboxInput("smooth", "Smooth ROC?", value = T),
+                                 checkboxInput("ci", "Plot CIs?", value = F)
                         ), "RocTAB"
                     ),
 
@@ -286,8 +287,10 @@ body <- dashboardBody(
         tabItem(tabName = "RocTAB",
                 h4("Basic ROC curve (more options will be added in future)"),
                 h5("You can enter data for one or two tests (plus the reference standard)"),
+                h6("Please be patient, the bootsrapping for the CIs can take some time"),
                 # htmlOutput("ROCplot"),
-                plotlyOutput("ROCplotly"),
+                plotlyOutput("ROCplotly", height = "650px"),
+                br(),
                 # h4("Results (if any cell contains a value less than 5, Fishers Exact test is performed as opposed to Persons Chi Square"),
                 box(title = "Enter Data (tab seperated)", collapsible = T, collapsed = F, width = 6,
                     aceEditor("roc_input", theme = "idle_fingers",
