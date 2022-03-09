@@ -186,8 +186,6 @@ shinyServer(function(input, output, session){
         DT::datatable(res.car.prnt, options = list(pageLength = 20))
 
 
-
-
     })
 
 

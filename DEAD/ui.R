@@ -134,7 +134,7 @@ header <- dashboardHeader(title =  div(img(src = "sq.png", height="42.885", widt
                                                         href = "http://lunginstitute.co.za/liiu/")
                           ),
                           dropdownMenu(type = "notifications", icon = icon("copyright"), badgeStatus = NULL,
-                                       notificationItem(text = "Copyright 2019")
+                                       notificationItem(text = "Copyright 2019 - V1.01")
                           )
 )
 
