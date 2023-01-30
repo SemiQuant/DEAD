@@ -1,2 +1,2 @@
 # DEAD
-This app allows you determine the performace of a diagnostic test(s). Includes diagnostic test with a single or two tests and a gold standard, and ROC curve analses.
+Diagnostic Estimates and Disease with ROC curves is an application that provides users a way to calculate common metrics (e.g., sensitivity, specificity, predictive values) of diagnostic tests (one or two tests and a gold standard), and perform ROC analyses.
