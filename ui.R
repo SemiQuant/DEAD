@@ -131,31 +131,33 @@ title <- "DEAD - Diagnostic Estimates and Disease Calculator"
 header <- dashboardHeader(
     title = div(img(src = "sq.png", height="42.885", width="34.29"), title), 
     titleWidth = 450,
-    tags$head(
-        # Meta description
-        tags$meta(name = "description", content = "DEAD (Diagnostic Estimates and Disease) is a free statistical tool for evaluating diagnostic test performance, including sensitivity, specificity, ROC curves, and contingency tables."),
-        
-        # Keywords
-        tags$meta(name = "keywords", content = "diagnostic test calculator, sensitivity specificity calculator, ROC curve analysis, medical statistics, diagnostic accuracy, contingency tables, McNemar test"),
-        
-        # Open Graph tags for social sharing
-        tags$meta(property = "og:title", content = "DEAD - Diagnostic Test Calculator"),
-        tags$meta(property = "og:description", content = "Free statistical tool for evaluating diagnostic test performance"),
-        tags$meta(property = "og:image", content = "sq.png"),
-        
-        # Twitter Card tags
-        tags$meta(name = "twitter:card", content = "summary"),
-        tags$meta(name = "twitter:title", content = "DEAD - Diagnostic Test Calculator"),
-        tags$meta(name = "twitter:description", content = "Free statistical tool for evaluating diagnostic test performance"),
-        tags$meta(name = "twitter:image", content = "sq.png"),
-        
-        # Additional meta tags
-        tags$meta(name = "author", content = "SemiQuant"),
-        tags$meta(name = "viewport", content = "width=device-width, initial-scale=1.0"),
-        tags$meta(name = "robots", content = "index, follow")
+    tags$li(class = "dropdown",
+        tags$head(
+            # Meta description
+            tags$meta(name = "description", content = "DEAD (Diagnostic Estimates and Disease) is a free statistical tool for evaluating diagnostic test performance, including sensitivity, specificity, ROC curves, and contingency tables."),
+            
+            # Keywords
+            tags$meta(name = "keywords", content = "diagnostic test calculator, sensitivity specificity calculator, ROC curve analysis, medical statistics, diagnostic accuracy, contingency tables, McNemar test"),
+            
+            # Open Graph tags for social sharing
+            tags$meta(property = "og:title", content = "DEAD - Diagnostic Test Calculator"),
+            tags$meta(property = "og:description", content = "Free statistical tool for evaluating diagnostic test performance"),
+            tags$meta(property = "og:image", content = "sq.png"),
+            
+            # Twitter Card tags
+            tags$meta(name = "twitter:card", content = "summary"),
+            tags$meta(name = "twitter:title", content = "DEAD - Diagnostic Test Calculator"),
+            tags$meta(name = "twitter:description", content = "Free statistical tool for evaluating diagnostic test performance"),
+            tags$meta(name = "twitter:image", content = "sq.png"),
+            
+            # Additional meta tags
+            tags$meta(name = "author", content = "SemiQuant"),
+            tags$meta(name = "viewport", content = "width=device-width, initial-scale=1.0"),
+            tags$meta(name = "robots", content = "index, follow")
+        )
     ),
     dropdownMenu(type = "notifications", icon = icon("copyright"), badgeStatus = NULL,
-               notificationItem(text = "Copyright 2019 - V1.01")
+                notificationItem(text = "Copyright 2019 - V1.01")
     )
 )
 
