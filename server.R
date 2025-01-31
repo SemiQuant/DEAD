@@ -75,25 +75,132 @@ shinyServer(function(input, output, session){
     ## Chi Sq or fisher ##
     ######################
     RCinputData <- reactive({
-        dat <- read.csv(text=input$rc_input, sep="", na.strings=c("","NA","."))
-        rownames(dat) <- dat[,1]
-        dat <- dat[,-c(1)]
-
-        dat <- as.matrix(dat)
-
-        print(addmargins(dat))
+        # Add debug logging
+        cat("\nCreating contingency matrix...\n")
+        
+        # Validate inputs are numeric and not NULL
+        req(input$rc_pp, input$rc_pn, input$rc_np, input$rc_nn)
+        values <- c(input$rc_pp, input$rc_pn, 
+                    input$rc_np, input$rc_nn)
+        
+        if (!all(sapply(values, is.numeric))) {
+            stop("All inputs must be numeric values")
+        }
+        
+        tryCatch({
+            # Create 2x2 matrix with proper structure
+            matrix_data <- matrix(
+                values,
+                nrow = 2,
+                ncol = 2,
+                byrow = TRUE,
+                dimnames = list(
+                    Test2 = c("Positive", "Negative"),
+                    Test1 = c("Positive", "Negative")
+                )
+            )
+            
+            cat("Matrix created:\n")
+            print(matrix_data)
+            
+            # Validate matrix dimensions
+            if (!all(dim(matrix_data) == c(2,2))) {
+                stop("Invalid matrix dimensions. Expected 2x2 matrix.")
+            }
+            
+            # Convert to table class for compatibility
+            matrix_data <- as.table(matrix_data)
+            
+            return(matrix_data)
+            
+        }, error = function(e) {
+            # Log error and return NULL
+            cat("Error in matrix creation:", e$message, "\n")
+            NULL
+        })
     })
 
-    output$RCdt <- renderPrint({
-        # if (sumRCinputData() < 20)
-        if (any(RCinputData()<5)){
-            print(binom.test(c(RCinputData()[1,1], sum(RCinputData())), p = 0.5))
-        }else{
-            if (input$CC)
-                print(mcnemar.test(RCinputData()), correct = F)
-            else
-                print(mcnemar.test(RCinputData()), correct = T)
-        }
+    output$RCdt <- renderDataTable({
+        # Validate input matrix
+        matrix_data <- RCinputData()
+        req(matrix_data)
+        
+        tryCatch({
+            # Extract discordant pairs for McNemar's test
+            n12 <- matrix_data[1,2]  # Test2+/Test1-
+            n21 <- matrix_data[2,1]  # Test2-/Test1+
+            
+            results <- if (min(n12, n21) < 5) {
+                # Use exact binomial test for small frequencies
+                binom.test(x = n12, n = n12 + n21, p = 0.5)
+            } else {
+                # Use McNemar's test with continuity correction as specified
+                mcnemar.test(matrix_data, correct = input$CC)
+            }
+            
+            # Format results into a table with conditional fields
+            metrics <- c("Test Type", "Discordant Pairs (n)")
+            values <- c(
+                results$method,
+                paste(n12 + n21, "(Test2+/Test1-:", n12, ", Test2-/Test1+:", n21, ")")
+            )
+            
+            # Add test-specific fields
+            if (inherits(results, "htest")) {
+                if (!is.null(results$statistic)) {
+                    metrics <- c(metrics, "Test Statistic")
+                    values <- c(values, sprintf("%.3f", unname(results$statistic)))
+                }
+                if (!is.null(results$p.value)) {
+                    metrics <- c(metrics, "P-value")
+                    values <- c(values, sprintf("%.4f", results$p.value))
+                }
+                if (!is.null(results$alternative)) {
+                    metrics <- c(metrics, "Alternative Hypothesis")
+                    values <- c(values, results$alternative)
+                }
+            }
+            
+            # Create data frame with matching rows
+            results_df <- data.frame(
+                Metric = metrics,
+                Value = values,
+                stringsAsFactors = FALSE
+            )
+            
+            # Return formatted datatable
+            DT::datatable(
+                results_df,
+                options = list(
+                    dom = 't',
+                    ordering = FALSE,
+                    pageLength = 50
+                ),
+                rownames = FALSE
+            ) %>%
+                formatStyle(
+                    columns = 1:2,
+                    backgroundColor = "rgb(52,62,72)",
+                    color = "white"
+                )
+        }, error = function(e) {
+            # Return error message as table
+            error_df <- data.frame(
+                Message = "Error",
+                Value = paste("Analysis error:", e$message)
+            )
+            
+            DT::datatable(
+                error_df,
+                options = list(dom = 't'),
+                rownames = FALSE
+            ) %>%
+                formatStyle(
+                    columns = 1:2,
+                    backgroundColor = "rgb(52,62,72)",
+                    color = "white"
+                )
+        })
     })
 
     # require(broom)
@@ -104,329 +211,674 @@ shinyServer(function(input, output, session){
     ## Diagnostic Test 1 ##
     #######################
     DTPinputData <- reactive({
-        if (input$longIn){
-            dat <- read.csv(text=input$DT1.long, sep="", na.strings=c("","NA","."))
-            dat[dat!="0" & dat!="1"] <- NA
-            colnames(dat) <- c("GoldStandard", "Test")
-            dat$GoldStandard <- factor(dat$GoldStandard, levels=c("1","0"))
-            dat$Test <- factor(dat$Test, levels=c("1","0"))
-            as.matrix(table(dat$Test, dat$GoldStandard))
-        }else{
-            dat <- read.csv(text=input$dtp_input, sep="", na.strings=c("","NA","."))
-            rownames(dat) <- dat[,1]
-            dat <- dat[,-c(1)]
-            dat <- as.matrix(dat)
-            dat
-        }
+        # Create matrix from numeric inputs with proper dimnames
+        result <- matrix(
+            c(input$tp, input$fn, input$fp, input$tn), 
+            nrow = 2,
+            byrow = FALSE,
+            dimnames = list(
+                c("Positive", "Negative"),  # Test results
+                c("Positive", "Negative")   # Disease status
+            )
+        )
+        
+        cat("\nInput matrix:\n")
+        print(result)
+        
+        # Convert to table and ensure proper class
+        result <- as.table(result)
+        class(result) <- c("table", "matrix")
+        
+        cat("\nFinal table structure:\n")
+        print(str(result))
+        
+        return(result)
     })
 
     output$DTPdt.res1 <- renderDataTable({
-        confInt <- input$CI1
-        dat.tbl <- DTPinputData()
-        colnames(dat.tbl) <- c("Dis+","Dis-"); rownames(dat.tbl) <- c("Test+","Test-")
-
-        # Print the table out
-        output$DTPdt1 <- renderPrint(print(addmargins(dat.tbl)))
-
-        ep.res <- summary(epi.tests(dat.tbl, conf.level = confInt))
-        ep.res$Test <- c("Apparent Prevalence","True Prevalence","Sensitivity","Specificity","Diagnostic Accuracy","Diagnostic Odds Ratio","Number Needed to Diagnose",
-                         "Youden's Index","Positive Predictive Value","Negative Predictive Value","Likelihood Ratio of a Positive Test","Likelihood Ratio of a Negative Test")
-        ep.res <- cbind(ep.res[c(4,1:3)], NA)
-        # colnames(ep.res) <- colnames(fish.res)
-
-        # dat.df <- expand.table(dat.tbl)
-        dat.caret <- DTPinputData()
-        res.car <- confusionMatrix(as.table(dat.caret))
-        res.car.edit <- data.frame(
-            Test = c(names(c(res.car$byClass[c(5:7, 8,9, 10)], res.car$overall[c(2)])), "No Information Rate"),
-            Estimate = c(res.car$byClass[c(5:7, 8,9, 10)], res.car$overall[c(2,5)]),
-            LowerCI = NA,
-            UpperCI = NA,
-            p.value = NA,
-            row.names = NULL
-        )
-        res.car.edit[8, "p.value"] <- res.car$overall["AccuracyPValue"]
-
-        if (input$roundDT1){
-            # ep.res[ep.res$Test == "Number Needed to Diagnose", c(2:4)] <- ceiling(ep.res[ep.res$Test == "Number Needed to Diagnose", c(2:4)])
-
-            ep.res$est <- round(ep.res$est, 2)
-            ep.res$lower <- round(ep.res$lower, 2)
-            ep.res$upper <- round(ep.res$upper, 2)
-            res.car.edit$Estimate <- round(res.car.edit$Estimate, 2)
-        }
-
-        NIR <- res.car.edit[8, ]
-        res.car.edit <- res.car.edit[-8,]
-
-
-        output$NIR <- renderPrint(
-            paste0(
-                "No Information Rate [NIR] = ", NIR["Estimate"],
-                ", p.value=", NIR["p.value"])
-        )
-
-        colnames(ep.res) <- colnames(res.car.edit)
-        row.names(ep.res) <- NULL
-        res.car.prnt <- rbind(ep.res, res.car.edit)[c(1:4)]
-
-        output$downloadDT1 <- downloadHandler(
-            filename = function() {
-                paste("DEAD_SingleTest", ".csv", sep = "")
-            },
-            content = function(file) {
-                write.csv(res.car.prnt, file, row.names = FALSE)
-            }
-        )
-
-        #
-        # dat.tbl.eprF <- tab.1test(d=Disease, y=Test, data=dat)
-        # acc.1test(dat.tbl.eprF, 1-confInt)
-
-        DT::datatable(res.car.prnt, options = list(pageLength = 20))
-
-
+        withProgress(message = 'Calculating diagnostic metrics...', {
+            confInt <- input$CI1
+            dat.tbl <- DTPinputData()
+            
+            tryCatch({
+                # Create results table with progress updates
+                incProgress(0.3, detail = "Computing basic metrics")
+                ep.res <- summary(epi.tests(dat.tbl, conf.level = confInt))
+                
+                incProgress(0.3, detail = "Computing additional statistics")
+                res.car <- confusionMatrix(dat.tbl)
+                
+                # Format results
+                incProgress(0.4, detail = "Formatting output")
+                results <- format_diagnostic_results(ep.res, res.car, input$roundDT1)
+                
+                # Return formatted datatable with custom styling
+                DT::datatable(
+                    results,
+                    options = list(
+                        pageLength = 50,
+                        dom = 't',
+                        ordering = FALSE,
+                        columnDefs = list(
+                            list(className = 'dt-center', targets = 1:4)
+                        )
+                    ),
+                    rownames = FALSE
+                ) %>%
+                    formatStyle(
+                        'Test',
+                        backgroundColor = "rgb(52,62,72)",
+                        color = "white",
+                        fontWeight = 'bold',
+                        fontSize = '14px'
+                    ) %>%
+                    formatStyle(
+                        c('Estimate', 'LowerCI', 'UpperCI', 'p.value'),
+                        backgroundColor = "rgb(52,62,72)",
+                        color = "white",
+                        fontSize = '14px',
+                        textAlign = 'center'
+                    ) %>%
+                    formatStyle(
+                        columns = 1:5,
+                        borderBottom = '1px solid rgba(255,255,255,0.1)'
+                    ) %>%
+                    formatRound(
+                        columns = c('Estimate', 'LowerCI', 'UpperCI', 'p.value'),
+                        digits = 2
+                    ) %>%
+                    formatStyle(
+                        'p.value',
+                        color = styleInterval(0.05, c('rgb(255,150,150)', 'white'))
+                    )
+            }, error = function(e) {
+                # Return error message in table format
+                DT::datatable(
+                    data.frame(Error = paste("Error in calculation:", e$message)),
+                    options = list(dom = 't')
+                )
+            })
+        })
     })
 
+    # Add output for confusion matrix
+    output$DTPdt1 <- renderPrint({
+        dat.tbl <- DTPinputData()
+        margins <- addmargins(dat.tbl)
+        
+        cat("Confusion Matrix with Marginal Totals:\n\n")
+        print(margins)
+    })
 
+    # Add output for NIR
+    output$NIR <- renderPrint({
+        dat.tbl <- DTPinputData()
+        res.car <- confusionMatrix(dat.tbl)
+        cat("No Information Rate p-value:", 
+            format.pval(res.car$overall["AccuracyPValue"], digits = 3))
+    })
 
+    # Improve download handler with progress indicator
+    output$downloadDT1 <- downloadHandler(
+        filename = function() {
+            paste0("diagnostic_test_results_", format(Sys.time(), "%Y%m%d_%H%M%S"), ".csv")
+        },
+        content = function(file) {
+            withProgress(message = 'Preparing download...', {
+                # Get results
+                confInt <- input$CI1
+                dat.tbl <- DTPinputData()
+                
+                incProgress(0.5, detail = "Calculating metrics")
+                results <- get_full_diagnostic_results(dat.tbl, confInt, input$roundDT1)
+                
+                incProgress(0.5, detail = "Writing file")
+                write.csv(results, file, row.names = FALSE)
+            })
+        }
+    )
+
+    # Add debug output
+    output$debug_output <- renderPrint({
+        print("Current inputs:")
+        print(paste("tp:", input$tp))
+        print(paste("fn:", input$fn))
+        print(paste("fp:", input$fp))
+        print(paste("tn:", input$tn))
+        print(paste("longIn:", input$longIn))
+        print(paste("CI1:", input$CI1))
+        print(paste("roundDT1:", input$roundDT1))
+    })
+
+    # For single test description
+    output$single_diagnostic_description <- renderText({
+        # Add debug logging
+        cat("\nGenerating single diagnostic description...\n")
+        
+        # Get input data with validation
+        dat.tbl <- DTPinputData()
+        confInt <- input$CI1
+        
+        tryCatch({
+            # Calculate metrics
+            ep.res <- summary(epi.tests(dat.tbl, conf.level = confInt))
+            res.car <- confusionMatrix(dat.tbl)
+            
+            # Format numbers - don't multiply by 100 since values are already percentages
+            format_num <- function(x) format(round(x, 2), nsmall = 2)
+            
+            # Extract key metrics with validation and safe defaults
+            sens <- ep.res$est[ep.res$statistic == "se"]
+            sens_ci <- if(!is.null(ep.res$lower[ep.res$statistic == "se"])) {
+                paste0(format_num(ep.res$lower[ep.res$statistic == "se"]*100), 
+                       "-", format_num(ep.res$upper[ep.res$statistic == "se"]*100))
+            } else {
+                "not available"
+            }
+            
+            spec <- ep.res$est[ep.res$statistic == "sp"]
+            spec_ci <- if(!is.null(ep.res$lower[ep.res$statistic == "sp"])) {
+                paste0(format_num(ep.res$lower[ep.res$statistic == "sp"]*100), 
+                       "-", format_num(ep.res$upper[ep.res$statistic == "sp"]*100))
+            } else {
+                "not available"
+            }
+            
+            # Create description
+            description <- sprintf("
+            <div style='background-color: rgb(52,62,72); padding: 15px; border-radius: 5px; margin-bottom: 20px;'>
+                <h4 style='color: white; margin-top: 0;'>Summary of Diagnostic Test Performance</h4>
+                <p style='color: white;'>
+                The diagnostic test demonstrated a sensitivity of %s%% (95%% CI: %s%%) and specificity of %s%% (95%% CI: %s%%). 
+                Overall diagnostic accuracy was %s%% (95%% CI: %s%%).
+                </p>
+            </div>",
+            format_num(sens*100), sens_ci, 
+            format_num(spec*100), spec_ci,
+            format_num(res.car$overall["Accuracy"]*100), 
+            paste0(format_num(res.car$overall["AccuracyLower"]*100), 
+                   "-", format_num(res.car$overall["AccuracyUpper"]*100)))
+            
+            return(description)
+            
+        }, error = function(e) {
+            # Log error
+            cat("\nError in single_diagnostic_description:", e$message, "\n")
+            cat("Error call:", deparse(e$call), "\n")
+            
+            return(sprintf("
+            <div style='background-color: rgb(52,62,72); padding: 15px; border-radius: 5px; margin-bottom: 20px;'>
+                <h4 style='color: white; margin-top: 0;'>Error Generating Description</h4>
+                <p style='color: white;'>
+                An error occurred while generating the diagnostic test description: %s
+                </p>
+            </div>", e$message))
+        })
+    })
+
+    # Add after RCinputData() reactive function
+    output$contingency_description <- renderText({
+        # Get input data
+        matrix_data <- RCinputData()
+        
+        # Extract discordant pairs
+        n12 <- matrix_data[1,2]  # Test2+/Test1-
+        n21 <- matrix_data[2,1]  # Test2-/Test1+
+        total <- sum(matrix_data)
+        
+        # Calculate test results
+        test_result <- if (min(n12, n21) < 5) {
+            binom.test(x = n12, n = n12 + n21, p = 0.5)
+        } else {
+            mcnemar.test(matrix_data, correct = input$CC)
+        }
+        
+        # Format p-value
+        p_value <- format.pval(test_result$p.value, digits = 3)
+        
+        # Create description
+        sprintf("
+        <div style='background-color: rgb(52,62,72); padding: 15px; border-radius: 5px; margin-bottom: 20px;'>
+            <h4 style='color: white; margin-top: 0;'>Summary of Statistical Analysis</h4>
+            <p style='color: white;'>
+            Analysis of %d paired measurements revealed %d discordant pairs (%d Test2+/Test1- and %d Test2-/Test1+). 
+            Using %s, the difference between tests was %s statistically significant (p = %s).
+            </p>
+        </div>",
+        total,
+        n12 + n21,
+        n12,
+        n21,
+        test_result$method,
+        ifelse(test_result$p.value < 0.05, "", "not"),
+        p_value)
+    })
 
     #######################
     ## Diagnostic Test 2 ##
     #######################
     DTPaired_inputData <- reactive({
+        cat("\nProcessing paired input data...\n")
         dat <- read.csv(text=input$DTbin_input, sep="", na.strings=c("","NA","."))
-        # rownames(dat) <- dat[,1]
-        # dat <- dat[,-c(1)]
-        dat[dat!="0" & dat!="1"] <- NA
+        cat("Raw data dimensions:", dim(dat), "\n")
+        
+        # Ensure proper column names and data types
         colnames(dat) <- c("GoldStandard", "Test1", "Test2")
-        # dat$GoldStandard <- factor(dat$GoldStandard, levels=c("1","0"))
-        # dat$Test1 <- factor(dat$Test1, levels=c("1","0"))
-        # dat$Test2 <- factor(dat$Test2, levels=c("1","0"))
-        dat[c(1:3)]
+        # Convert to numeric and ensure only 0/1 values
+        dat$GoldStandard <- as.numeric(as.character(dat$GoldStandard))
+        dat$Test1 <- as.numeric(as.character(dat$Test1))
+        dat$Test2 <- as.numeric(as.character(dat$Test2))
+        
+        # Validate that values are only 0 or 1
+        valid_rows <- dat$GoldStandard %in% c(0,1) & 
+                      dat$Test1 %in% c(0,1) & 
+                      dat$Test2 %in% c(0,1)
+        
+        if(!all(valid_rows)) {
+            cat("Warning: Some rows contained invalid values (not 0 or 1)\n")
+            dat <- dat[valid_rows, ]
+        }
+        
+        # Validate data
+        cat("Missing values in GoldStandard:", sum(is.na(dat$GoldStandard)), "\n")
+        cat("Missing values in Test1:", sum(is.na(dat$Test1)), "\n")
+        cat("Missing values in Test2:", sum(is.na(dat$Test2)), "\n")
+        
+        # Remove rows with any NA values
+        dat <- dat[complete.cases(dat), ]
+        cat("Final data dimensions after cleaning:", dim(dat), "\n")
+        
+        return(dat[c(1:3)])
     })
 
 
     observe({
+        # Add debug logging
+        cat("\nStarting analysis with inputs:\n")
+        cat("CI2:", input$CI2, "\n")
         confInt <- input$CI2
-        dat <- NULL
         dat <- DTPaired_inputData()
+        cat("Input data dimensions:", dim(dat), "\n")
+        cat("Input data head:\n")
+        print(head(dat))
 
-        ptab <- dlr.results <- res <- spec.tmp <- NULL
-        ptab <- tab.paired(d=GoldStandard, y1=Test1, y2=Test2, data=dat)
-        output$ptabA <- renderPrint(print(ptab))
+        # Wrap everything in tryCatch to handle errors gracefully
+        tryCatch({
+            # Create paired table
+            cat("\nAttempting to create paired table...\n")
+            ptab <- tab.paired(d=GoldStandard, y1=Test1, y2=Test2, data=dat)
+            cat("Paired table created successfully:\n")
+            print(ptab)
 
-        dlr.results <- dlr.regtest(ptab, alpha = 1-confInt)
-        # null hypothesis rDLR = DLR of Test 1 / DLR of Test 2 = 1
-        res <- rbind(LRpos=data.frame(dlr.results$pdlr), LRneg=data.frame(dlr.results$ndlr))
-        colnames(res) <- c("Test1", "Test2", "Ratio", "SE.log", "TestStatistic", "p.value", "Lower Conficence Interval", "Upper Conficence Interval")
-        # res$test <- c("LRpos", "LRneg")
-        spec.tmp <- sesp.mcnemar(ptab)
-        spec.tmp <- rbind(sensitivity=spec.tmp$sensitivity, specificity=spec.tmp$specificity)
-        spec.tmp2 <- sesp.exactbinom(ptab)
-        spec.tmp2 <- rbind(sensitivity=spec.tmp2$sensitivity, specificity=spec.tmp2$specificity)
+            output$ptabA <- renderPrint({
+                print(ptab)
+            })
 
-        pv1 <- pv.gs(ptab)
-        pv1 <- rbind(PPV=data.frame(pv1$ppv), NPV=data.frame(pv1$npv))
-        pv1$Method <- "Generalized Score Statistic (gs)"
-        pv2 <- pv.rpv(ptab, alpha = 1-confInt)
-        pv2.a <- data.frame(pv2$ppv)
-        pv2.b <- data.frame(pv2$npv)
-        colnames(pv2.a) <- c("Test1", "Test2", "Ratio", "SE.log", "Lower Conficence Interval", "Upper Conficence Interval", "Test Statistic", "p.value")
-        colnames(pv2.b) <- colnames(pv2.a)
-        pv2 <- rbind(PPV=pv2.a, NPV=pv2.b)
-        pv2$Method <- "Relative Predictive Values (rpv)"
-
-        pv3 <- pv.wgs(ptab)
-        pv3 <- rbind(PPV=data.frame(pv3$ppv), NPV=data.frame(pv3$npv))
-        pv3$Method <- "Weighted Generalized Score Statistic (wgs)"
-
-
-        # res.tmp.A <- acc.paired(ptab, alpha = 1-confInt)
-        res.tmp.A <- acc.paired.me(ptab, alpha = 1-confInt)
-
-
-
-        res.plt <- rbind(t(data.frame(res.tmp.A$Test1$sensitivity,
-                                      res.tmp.A$Test1$specificity,
-                                      res.tmp.A$Test1$ppv,
-                                      res.tmp.A$Test1$npv,
-                                      res.tmp.A$Test1$pdlr,
-                                      res.tmp.A$Test1$ndlr)),
-                         t(data.frame(
-                             res.tmp.A$Test2$sensitivity,
-                             res.tmp.A$Test2$specificity,
-                             res.tmp.A$Test2$ppv,
-                             res.tmp.A$Test2$npv,
-                             res.tmp.A$Test2$pdlr,
-                             res.tmp.A$Test2$ndlr)))
-        res.plt <- data.frame(res.plt)
-        res.plt$Test <- c(rep("Test 1", 6), rep("Test 2", 6))
-        res.plt$Metric <- rep(c("Sensitivity", "Specificity", "PPV", "NPV", "PDLR", "NDLR"), 2)
-        res.plt$Estimate <- res.plt$est
-
-
-        Offset <- data.frame(Test = unique(res.plt$Test),
-                             offset = seq(-0.1, 0.1,length.out = length(unique(res.plt$Test))))
-
-        res.plt <- merge(res.plt, Offset, by = "Test", all.x = TRUE)
-
-        ## Calculate an x location
-        res.plt <- res.plt[order(res.plt$Metric, decreasing = T),]
-        res.plt$y_location <- as.numeric(as.factor(res.plt$Metric)) + res.plt$offset
-        # xend1 <- max(res.plt$est*100+res.plt$se*100)+max(res.plt$est*100+res.plt$se*100)*0.05
-        hline <- function(y = 0, color = "#e7e7e7") {
-            list(
-                type = "line",
-                x0 = 0,
-                x1 = 1,
-                xref = "paper",
-                opacity = 0.3,
-                y0 = y,
-                y1 = y,
-                line = list(color = color)
-            )
-        }
-
-
-
-        output$stat.plt1 <- renderPlotly({
-            res.plt%>%
-                plot_ly( y = ~y_location, x = ~Estimate*100, type = 'scatter', mode = 'markers', color = ~Test,
-                         text = ~paste0(Test,": ", Metric, "\nEstimate: ", round(Estimate ,2), " (", round(lcl ,2), ",", round(ucl ,2), ")" ),
-                         hoverinfo = "text",
-                         error_x = ~list(array = se*100,
-                                         color = 'white')
-                )%>%
-                layout(
-                    font=list(
-                        family = "sans serif",
-                        size = 14,
-                        color = 'White'),
-                    paper_bgcolor='#272b30',
-                    plot_bgcolor='#272b30',
-                    # autosize = F, width = 800, height =850,
-                    yaxis=list(title=NA,
-                               zeroline=FALSE,
-                               tickmode = "array",
-                               tickvals = unique(as.numeric(as.factor(res.plt$Metric))),
-                               ticktext = unique(res.plt$Metric),
-                               showgrid = TRUE,
-                               showline = FALSE,
-                               gridcolor = "#272b30"
-                    ),
-                    shapes = list(hline(0.8),
-                                  hline(1.2),
-                                  hline(1.8),
-                                  hline(2.2),
-                                  hline(2.8),
-                                  hline(3.2),
-                                  hline(3.8),
-                                  hline(4.2),
-                                  hline(4.8),
-                                  hline(5.2),
-                                  hline(5.8),
-                                  hline(6.2)
-                    )
+            # Get likelihood ratio results with validation
+            cat("\nCalculating likelihood ratios...\n")
+            dlr.results <- dlr.regtest(ptab, alpha = 1-confInt)
+            cat("DLR results obtained:", !is.null(dlr.results), "\n")
+            
+            # Validate DLR results structure
+            if (is.null(dlr.results) || !all(c("pdlr", "ndlr") %in% names(dlr.results))) {
+                cat("Warning: Invalid DLR results structure\n")
+                res <- data.frame(
+                    Message = "Unable to calculate likelihood ratios - please check input data",
+                    stringsAsFactors = FALSE
                 )
+            } else {
+                # Create data frame directly from DLR results
+                res <- data.frame(
+                    Test = c("LRpos", "LRneg"),
+                    Test1 = c(dlr.results$pdlr$test1, dlr.results$ndlr$test1),
+                    Test2 = c(dlr.results$pdlr$test2, dlr.results$ndlr$test2),
+                    Ratio = c(dlr.results$pdlr$ratio, dlr.results$ndlr$ratio),
+                    SE.log = c(dlr.results$pdlr$se.log, dlr.results$ndlr$se.log),
+                    TestStatistic = c(dlr.results$pdlr$test.statistic, dlr.results$ndlr$test.statistic),
+                    p.value = c(dlr.results$pdlr$p.value, dlr.results$ndlr$p.value),
+                    LowerCI = c(dlr.results$pdlr$lcl, dlr.results$ndlr$lcl),
+                    UpperCI = c(dlr.results$pdlr$ucl, dlr.results$ndlr$ucl),
+                    stringsAsFactors = FALSE
+                )
+            }
+            
+            # Add debug output for DLR results structure
+            cat("\nDLR Results Structure:\n")
+            str(dlr.results)
+            
+            # Get sensitivity/specificity results with validation
+            cat("\nCalculating sensitivity/specificity...\n")
+            spec.tmp <- sesp.mcnemar(ptab)
+            cat("Spec results obtained:", !is.null(spec.tmp), "\n")
 
+            # Print debug info
+            cat("\nSensitivity/Specificity Results Structure:\n")
+            str(spec.tmp)
+
+            if (is.null(spec.tmp) || !all(c("sensitivity", "specificity") %in% names(spec.tmp))) {
+                cat("Warning: Invalid sensitivity/specificity results structure\n")
+                spec.tmp <- data.frame(
+                    Test = character(),
+                    Test1 = numeric(),
+                    Test2 = numeric(),
+                    Difference = numeric(),
+                    p.value = numeric(),
+                    TestStatistic = numeric(),
+                    Method = character(),
+                    stringsAsFactors = FALSE
+                )
+            } else {
+                # Extract values with safe accessors - note the changed structure
+                sens_test1 <- if (!is.null(spec.tmp$sensitivity["test1"])) spec.tmp$sensitivity["test1"] else NA
+                sens_test2 <- if (!is.null(spec.tmp$sensitivity["test2"])) spec.tmp$sensitivity["test2"] else NA
+                sens_diff <- if (!is.null(spec.tmp$sensitivity["diff"])) spec.tmp$sensitivity["diff"] else NA
+                sens_pval <- if (!is.null(spec.tmp$sensitivity["p.value"])) spec.tmp$sensitivity["p.value"] else NA
+                sens_stat <- if (!is.null(spec.tmp$sensitivity["test.statistic"])) spec.tmp$sensitivity["test.statistic"] else NA
+                
+                spec_test1 <- if (!is.null(spec.tmp$specificity["test1"])) spec.tmp$specificity["test1"] else NA
+                spec_test2 <- if (!is.null(spec.tmp$specificity["test2"])) spec.tmp$specificity["test2"] else NA
+                spec_diff <- if (!is.null(spec.tmp$specificity["diff"])) spec.tmp$specificity["diff"] else NA
+                spec_pval <- if (!is.null(spec.tmp$specificity["p.value"])) spec.tmp$specificity["p.value"] else NA
+                spec_stat <- if (!is.null(spec.tmp$specificity["test.statistic"])) spec.tmp$specificity["test.statistic"] else NA
+                
+                spec.tmp <- data.frame(
+                    Test = c("sensitivity", "specificity"),
+                    Test1 = c(sens_test1, spec_test1),
+                    Test2 = c(sens_test2, spec_test2),
+                    Difference = c(sens_diff, spec_diff),
+                    p.value = c(sens_pval, spec_pval),
+                    TestStatistic = c(sens_stat, spec_stat),
+                    Method = "McNemar",
+                    stringsAsFactors = FALSE
+                )
+            }
+
+            # Get exact binomial results with validation
+            spec.tmp2 <- sesp.exactbinom(ptab)
+            cat("\nExact Binomial Results Structure:\n")
+            str(spec.tmp2)
+
+            if (is.null(spec.tmp2) || !all(c("sensitivity", "specificity") %in% names(spec.tmp2))) {
+                cat("Warning: Invalid exact binomial results structure\n")
+                spec.tmp2 <- data.frame(
+                    Test = character(),
+                    Test1 = numeric(),
+                    Test2 = numeric(),
+                    Difference = numeric(),
+                    p.value = numeric(),
+                    TestStatistic = numeric(),
+                    Method = character(),
+                    stringsAsFactors = FALSE
+                )
+            } else {
+                # Extract values with safe accessors - note the changed structure
+                sens_test1 <- if (!is.null(spec.tmp2$sensitivity["test1"])) spec.tmp2$sensitivity["test1"] else NA
+                sens_test2 <- if (!is.null(spec.tmp2$sensitivity["test2"])) spec.tmp2$sensitivity["test2"] else NA
+                sens_diff <- if (!is.null(spec.tmp2$sensitivity["diff"])) spec.tmp2$sensitivity["diff"] else NA
+                
+                spec_test1 <- if (!is.null(spec.tmp2$specificity["test1"])) spec.tmp2$specificity["test1"] else NA
+                spec_test2 <- if (!is.null(spec.tmp2$specificity["test2"])) spec.tmp2$specificity["test2"] else NA
+                spec_diff <- if (!is.null(spec.tmp2$specificity["diff"])) spec.tmp2$specificity["diff"] else NA
+                
+                spec.tmp2 <- data.frame(
+                    Test = c("sensitivity", "specificity"),
+                    Test1 = c(sens_test1, spec_test1),
+                    Test2 = c(sens_test2, spec_test2),
+                    Difference = c(sens_diff, spec_diff),
+                    p.value = NA,
+                    TestStatistic = NA,
+                    Method = "Exact Binomial",
+                    stringsAsFactors = FALSE
+                )
+            }
+
+            # Get predictive values with validation
+            pv1 <- pv.gs(ptab)
+            cat("\nPredictive Values Structure:\n")
+            str(pv1)
+
+            if (is.null(pv1) || !all(c("ppv", "npv") %in% names(pv1))) {
+                cat("Warning: Invalid predictive values structure\n")
+                pv1 <- data.frame(
+                    Test = character(),
+                    Test1 = numeric(),
+                    Test2 = numeric(),
+                    Difference = numeric(),
+                    p.value = numeric(),
+                    TestStatistic = numeric(),
+                    Method = character(),
+                    stringsAsFactors = FALSE
+                )
+            } else {
+                # Extract values with safe accessors - using named vector access
+                ppv_test1 <- if (!is.null(pv1$ppv["test1"])) pv1$ppv["test1"] else NA
+                ppv_test2 <- if (!is.null(pv1$ppv["test2"])) pv1$ppv["test2"] else NA
+                ppv_diff <- if (!is.null(pv1$ppv["diff"])) pv1$ppv["diff"] else NA
+                ppv_pval <- if (!is.null(pv1$ppv["p.value"])) pv1$ppv["p.value"] else NA
+                ppv_stat <- if (!is.null(pv1$ppv["test.statistic"])) pv1$ppv["test.statistic"] else NA
+                
+                npv_test1 <- if (!is.null(pv1$npv["test1"])) pv1$npv["test1"] else NA
+                npv_test2 <- if (!is.null(pv1$npv["test2"])) pv1$npv["test2"] else NA
+                npv_diff <- if (!is.null(pv1$npv["diff"])) pv1$npv["diff"] else NA
+                npv_pval <- if (!is.null(pv1$npv["p.value"])) pv1$npv["p.value"] else NA
+                npv_stat <- if (!is.null(pv1$npv["test.statistic"])) pv1$npv["test.statistic"] else NA
+                
+                pv1 <- data.frame(
+                    Test = c("PPV", "NPV"),
+                    Test1 = c(ppv_test1, npv_test1),
+                    Test2 = c(ppv_test2, npv_test2),
+                    Difference = c(ppv_diff, npv_diff),
+                    p.value = c(ppv_pval, npv_pval),
+                    TestStatistic = c(ppv_stat, npv_stat),
+                    Method = "Generalized Score Statistic (gs)",
+                    stringsAsFactors = FALSE
+                )
+            }
+
+            # Combine all results, ensuring they have matching columns
+            comb <- rbind(spec.tmp, spec.tmp2, pv1)
+            
+            # Round if requested and if there's data to round
+            if (nrow(comb) > 0 && input$roundDT2) {
+                numeric_cols <- sapply(comb, is.numeric)
+                comb[numeric_cols] <- round(comb[numeric_cols], 2)
+            }
+            
+            if (nrow(res) > 0 && input$roundDT2) {
+                numeric_cols <- sapply(res, is.numeric)
+                res[numeric_cols] <- round(res[numeric_cols], 2)
+            }
+
+            # Display results
+            output$ptab3 <- renderDataTable({
+                if (nrow(comb) == 0) {
+                    datatable(data.frame(Message = "No results available - please check your input data"),
+                             options = list(dom = 't'))
+                } else {
+                    datatable(comb, 
+                             options = list(
+                                 pageLength = 20,
+                                 dom = 't',
+                                 ordering = FALSE,
+                                 columnDefs = list(
+                                     list(className = 'dt-center', targets = 1:6)
+                                 )
+                             ),
+                             rownames = FALSE) %>%
+                        formatStyle(columns = 1:ncol(comb),
+                                  backgroundColor = "rgb(70,80,90)",
+                                  color = "white")
+                }
+            })
+            
+            output$ptab4 <- renderDataTable({
+                if ("Message" %in% names(res)) {
+                    datatable(res,
+                             options = list(dom = 't'),
+                             rownames = FALSE) %>%
+                        formatStyle(columns = 1,
+                                   backgroundColor = "rgb(70,80,90)",
+                                   color = "white")
+                } else {
+                    datatable(res,
+                             options = list(
+                                 pageLength = 20,
+                                 dom = 't',
+                                 ordering = FALSE,
+                                 columnDefs = list(
+                                     list(className = 'dt-center', targets = 1:8)
+                                 )
+                             ),
+                             rownames = FALSE) %>%
+                        formatStyle(columns = 1:ncol(res),
+                                   backgroundColor = "rgb(70,80,90)",
+                                   color = "white")
+                }
+            })
+
+            # Add download handlers
+            output$downloadDT2A <- downloadHandler(
+                filename = function() paste0("DEAD_DualTestsA_", format(Sys.time(), "%Y%m%d_%H%M%S"), ".csv"),
+                content = function(file) write.csv(comb, file, row.names = FALSE)
+            )
+
+            output$downloadDT2B <- downloadHandler(
+                filename = function() paste0("DEAD_DualTestsB_", format(Sys.time(), "%Y%m%d_%H%M%S"), ".csv"),
+                content = function(file) write.csv(res, file, row.names = FALSE)
+            )
+
+            # Add the statistical comparison plot
+            output$stat.plt1 <- renderPlotly({
+                # Create data frame for plotting with proper error checking
+                tryCatch({
+                    plot_data <- data.frame(
+                        Test = rep(c("Sensitivity", "Specificity", "PPV", "NPV"), each = 2),
+                        Method = rep(c("Test1", "Test2"), times = 4),
+                        Value = c(
+                            # Access sensitivity/specificity values from spec.tmp data frame
+                            spec.tmp$Test1[spec.tmp$Test == "sensitivity"], 
+                            spec.tmp$Test2[spec.tmp$Test == "sensitivity"],
+                            spec.tmp$Test1[spec.tmp$Test == "specificity"], 
+                            spec.tmp$Test2[spec.tmp$Test == "specificity"],
+                            # Access PPV/NPV values from pv1 data frame
+                            pv1$Test1[pv1$Test == "PPV"], 
+                            pv1$Test2[pv1$Test == "PPV"],
+                            pv1$Test1[pv1$Test == "NPV"], 
+                            pv1$Test2[pv1$Test == "NPV"]
+                        )
+                    )
+                    
+                    # Create the plot with improved styling
+                    p <- plot_ly(plot_data, x = ~Test, y = ~Value, color = ~Method, type = "bar") %>%
+                        layout(
+                            title = list(
+                                text = "Statistical Comparison of Tests",
+                                font = list(color = "white", size = 16)
+                            ),
+                            yaxis = list(
+                                title = "Value", 
+                                range = c(0, 1),
+                                gridcolor = "rgba(255,255,255,0.1)",
+                                zerolinecolor = "rgba(255,255,255,0.1)"
+                            ),
+                            xaxis = list(
+                                title = "",
+                                gridcolor = "rgba(255,255,255,0.1)",
+                                zerolinecolor = "rgba(255,255,255,0.1)"
+                            ),
+                            barmode = "group",
+                            showlegend = TRUE,
+                            plot_bgcolor = "rgb(52,62,72)",
+                            paper_bgcolor = "rgb(52,62,72)",
+                            font = list(color = "white"),
+                            margin = list(t = 50),
+                            legend = list(
+                                bgcolor = "rgba(255,255,255,0.1)",
+                                font = list(color = "white")
+                            )
+                        )
+                    
+                    return(p)
+                }, error = function(e) {
+                    # Return an empty plot with error message if something goes wrong
+                    plot_ly() %>%
+                        layout(
+                            title = "Error creating comparison plot",
+                            annotations = list(
+                                x = 0.5,
+                                y = 0.5,
+                                text = "Unable to generate plot - please check input data",
+                                showarrow = FALSE,
+                                font = list(color = "white")
+                            ),
+                            plot_bgcolor = "rgb(52,62,72)",
+                            paper_bgcolor = "rgb(52,62,72)"
+                        )
+                })
+            })
+
+            # For paired test description (rename existing output)
+            output$paired_diagnostic_description <- renderText({
+                dat <- DTPaired_inputData()
+                confInt <- input$CI2
+                
+                # Create paired table
+                ptab <- tab.paired(d=GoldStandard, y1=Test1, y2=Test2, data=dat)
+                
+                # Get sensitivity/specificity results
+                spec.tmp <- sesp.mcnemar(ptab)
+                
+                # Format numbers
+                format_num <- function(x) format(round(x, 2), nsmall = 2)
+                
+                # Extract key differences
+                sens_diff <- format_num(abs(spec.tmp$sensitivity["diff"])*100)
+                sens_p <- format.pval(spec.tmp$sensitivity["p.value"], digits = 3)
+                
+                spec_diff <- format_num(abs(spec.tmp$specificity["diff"])*100)
+                spec_p <- format.pval(spec.tmp$specificity["p.value"], digits = 3)
+                
+                # Calculate total sample size and disease prevalence
+                total_n <- sum(ptab$diseased) + sum(ptab$non.diseased)
+                prevalence <- format_num(sum(ptab$diseased) / total_n * 100)
+                
+                # Create description
+                sprintf("
+                <div style='background-color: rgb(52,62,72); padding: 15px; border-radius: 5px; margin-bottom: 20px;'>
+                    <h4 style='color: white; margin-top: 0;'>Summary of Comparative Test Performance</h4>
+                    <p style='color: white;'>
+                    Analysis of %d subjects (disease prevalence: %s%%) compared two tests. 
+                    The absolute difference in sensitivity between tests was %s%% (p = %s) and 
+                    specificity differed by %s%% (p = %s). 
+                    </p>
+                    <p style='color: white;'>
+                    Test 1 showed sensitivity of %s%% and specificity of %s%%, while 
+                    Test 2 demonstrated sensitivity of %s%% and specificity of %s%%.
+                    </p>
+                </div>",
+                total_n,
+                prevalence,
+                sens_diff, sens_p,
+                spec_diff, spec_p,
+                format_num(spec.tmp$sensitivity["test1"]*100),
+                format_num(spec.tmp$specificity["test1"]*100),
+                format_num(spec.tmp$sensitivity["test2"]*100),
+                format_num(spec.tmp$specificity["test2"]*100))
+            })
+        }, error = function(e) {
+            cat("\nError occurred:", e$message, "\n")
+            cat("Error call:", deparse(e$call), "\n")
+            # Handle any errors that occur
+            msg <- paste("Error in analysis:", e$message)
+            output$ptab3 <- renderDataTable({
+                datatable(data.frame(Error = msg),
+                         options = list(dom = 't'))
+            })
+            output$ptab4 <- renderDataTable({
+                datatable(data.frame(Error = msg),
+                         options = list(dom = 't'))
+            })
         })
-
-
-
-        spec.tmp <- data.frame(spec.tmp[,c(1,2,3,5,4)])
-        spec.tmp$Method <- "McNemar"
-        spec.tmp2 <- data.frame(spec.tmp2)
-        spec.tmp2$test.statistic <- NA
-        spec.tmp2$Method <- "Exact Binomial (if small number [<20] of values use this)"
-
-        comb <- rbind(spec.tmp, spec.tmp2)
-        comb$Test <- rownames(comb)
-
-        mc.tmp <- rbind(pv1, pv3)
-        mc.tmp$Test <- rownames(mc.tmp)
-        mc.tmp <- mc.tmp[c(1,2,3,5,4,6,7)]
-        comb <- rbind(comb, mc.tmp)
-
-        pv2 <- data.frame(pv2)
-        pv2$Test <- rownames(pv2)
-
-        res2 <- data.frame(res)
-        res2 <- res2[c(1,2,3,4,7,8,5,6)]
-        res2$Method <- NA
-        res2$Test <- rownames(res2)
-        colnames(res2) <- colnames(pv2)
-
-        res2 <- rbind(pv2, res2)
-
-        # rownames(res.tmp.A) <- NULL
-        rownames(comb) <- NULL
-        rownames(res2) <- NULL
-        comb <- comb[c(7,1:6)]
-        colnames(comb) <- c("Test", "Test1", "Test2", "Difference", "p.value", "Test Statistic", "Method")
-        res2 <- res2[c(10,1:3,8,7, 9,4,5,6)]
-        colnames(res2) <- c("Test", "Test1", "Test2", "Ratio", "p.value", "Test.Statistic", "Method", "SE.log", "Lower Conficence Interval", "Upper Conficence Interval")
-
-        # test <<- comb
-        # test2<<-res2
-        if (input$roundDT2){
-            for (col in c(2:4,6)){
-                comb[c(col)] <- round(unlist(comb[c(col)]), 2) #dont know why its making me do this, think dataTable package doing something
-            }
-
-            for (col in c(2,3,4,6,8,9,10)){
-                res2[c(col)] <- round(unlist(res2[c(col)]), 2)
-            }
-        }
-
-        # datatable(, options = list(pageLength = 21))
-        # test1 <<- comb[-c(6)]
-        # test2 <<- res2
-
-        comb$Test <- c("Sensitivity", "Specificty", "Sensitivity", "Specificty",
-                       "Positive Predictive Value", "Negative Predictive Value","Positive Predictive Value", "Negative Predictive Value")
-        res2$Test <- c("Positive Predictive Value", "Negative Predictive Value",
-                       "Positive Likelihood Ratio", "Negative Likelihood Ratio")
-
-        comb <- comb[-c(6)]
-        comb <- comb[c(1,3,2,4,5,7,6,8), c(1,6,2,3,4,5)]
-        res2 <- res2[-c(6, 8)]
-        res2 <- res2[c(1,6,2,3,4,5,7,8)]
-
-        #     comb$LCI <- NA
-        #     comb$UCI <- NA
-        #     colnames(comb)[7:8] <- c("Lower Conficence Interval", "Upper Conficence Interval")
-        # comb <<- rbind(comb, res2)
-
-        # test1<<-comb
-        output$ptab1 <- renderPrint(print(res.tmp.A))
-        output$ptab3 <- renderDataTable(
-            datatable(comb, selection = 'none')
-        )
-        output$ptab4 <- renderDataTable(
-            datatable(res2, selection = 'none')
-        )
-
-        comb$p.value <- as.numeric(comb$p.value)
-        output$downloadDT2A <- downloadHandler(
-            filename = function() {
-                paste("DEAD_DualTestsA", ".csv", sep = "")
-            },
-            content = function(file2) {
-                write.csv(comb, file2, row.names = FALSE)
-            }
-        )
-
-        output$downloadDT2B <- downloadHandler(
-            filename = function() {
-                paste("DEAD_DualTestsB", ".csv", sep = "")
-            },
-            content = function(file) {
-                write.csv(res2, file, row.names = FALSE)
-            }
-        )
-
-
     })
 
 
@@ -498,11 +950,11 @@ shinyServer(function(input, output, session){
     #         # txt2 <- roc(Outcome ~ Test2, dat, smooth=TRUE)
     #         withProgress(message = 'Calculating CIs', value = 0, {
     #             incProgress(1/2, detail = paste("Bootstrapping"))
-                # txt1.CI <- roc(dat$Outcome, dat$Test1, ci = TRUE)
-                # txt1 <- paste0(round(txt1.CI$ci[2], 2), " (95% CI=", round(txt1.CI$ci[1], 2), ", ", round(txt1.CI$ci[3], 2), ")")
-                # txt2.CI <- roc(dat$Outcome, dat$Test2, ci = TRUE)
-                # txt2 <- paste0(round(txt2.CI$ci[2], 2), " (95% CI=", round(txt2.CI$ci[1], 2), ", ", round(txt2.CI$ci[3], 2), ")")
-                # roc.p <- roc.test(txt1.CI, txt2.CI)
+    #             txt1.CI <- roc(dat$Outcome, dat$Test1, ci = TRUE)
+    #             txt1 <- paste0(round(txt1.CI$ci[2], 2), " (95% CI=", round(txt1.CI$ci[1], 2), ", ", round(txt1.CI$ci[3], 2), ")")
+    #             txt2.CI <- roc(dat$Outcome, dat$Test2, ci = TRUE)
+    #             txt2 <- paste0(round(txt2.CI$ci[2], 2), " (95% CI=", round(txt2.CI$ci[1], 2), ", ", round(txt2.CI$ci[3], 2), ")")
+    #             roc.p <- roc.test(txt1.CI, txt2.CI)
     #
     #             dat.long <- melt(dat, id.vars="Outcome")
     #             colnames(dat.long) <- c("Outcome", "Test", "Measurement")
@@ -629,14 +1081,14 @@ shinyServer(function(input, output, session){
                             bgcolor = "#E2E2E2",
                             bordercolor = "#FFFFFF",
                             borderwidth = 2)
-                    )%>% layout(shapes = list(
-                        type = "line",
-                        x0 = 0,
-                        x1 = 1,
-                        y0 = 0,
-                        y1 = 1,
-                        line = list(color = "white")
-                    ))
+                        )%>% layout(shapes = list(
+                            type = "line",
+                            x0 = 0,
+                            x1 = 1,
+                            y0 = 0,
+                            y1 = 1,
+                            line = list(color = "white")
+                        ))
 
 
                 if(input$ci){
@@ -671,17 +1123,55 @@ shinyServer(function(input, output, session){
             p
     })
 
-
-
-
-
-
-
-
-
-
-
-
+    # Add ROC curve description
+    output$roc_description <- renderText({
+        dat <- ROCinputData()
+        
+        if (ncol(dat) <= 2) {
+            # Single test ROC analysis
+            txt.CI <- roc(Outcome ~ Test1, dat, smooth=input$smooth, ci = TRUE)
+            
+            sprintf("
+            <div style='background-color: rgb(52,62,72); padding: 15px; border-radius: 5px; margin-bottom: 20px;'>
+                <h4 style='color: white; margin-top: 0;'>Summary of ROC Analysis</h4>
+                <p style='color: white;'>
+                Analysis of %d measurements showed an area under the ROC curve (AUC) of %.2f 
+                (95%% CI: %.2f to %.2f). This indicates %s discriminative ability.
+                </p>
+            </div>",
+            nrow(dat),
+            txt.CI$auc,
+            txt.CI$ci[1],
+            txt.CI$ci[3],
+            case_when(
+                txt.CI$auc >= 0.9 ~ "excellent",
+                txt.CI$auc >= 0.8 ~ "good",
+                txt.CI$auc >= 0.7 ~ "fair",
+                txt.CI$auc >= 0.6 ~ "poor",
+                TRUE ~ "very poor"
+            ))
+        } else {
+            # Comparative ROC analysis
+            txt1.CI <- roc(dat$Outcome, dat$Test1, ci = TRUE)
+            txt2.CI <- roc(dat$Outcome, dat$Test2, ci = TRUE)
+            roc.p <- roc.test(txt1.CI, txt2.CI)
+            
+            sprintf("
+            <div style='background-color: rgb(52,62,72); padding: 15px; border-radius: 5px; margin-bottom: 20px;'>
+                <h4 style='color: white; margin-top: 0;'>Summary of Comparative ROC Analysis</h4>
+                <p style='color: white;'>
+                Analysis of %d measurements compared two tests. Test 1 showed an AUC of %.2f 
+                (95%% CI: %.2f to %.2f), while Test 2 had an AUC of %.2f (95%% CI: %.2f to %.2f). 
+                The difference between tests was %s statistically significant (p = %.3f).
+                </p>
+            </div>",
+            nrow(dat),
+            txt1.CI$auc, txt1.CI$ci[1], txt1.CI$ci[3],
+            txt2.CI$auc, txt2.CI$ci[1], txt2.CI$ci[3],
+            ifelse(roc.p$p.value < 0.05, "", "not"),
+            roc.p$p.value)
+        }
+    })
 
     observeEvent(input$sidebarmenu, {
         if (input$sidebarmenu == "cite")
@@ -694,6 +1184,108 @@ shinyServer(function(input, output, session){
     })
 
 })
+
+format_diagnostic_results <- function(ep.res, res.car, should_round) {
+    # Create mapping for statistic names
+    stat_names <- c(
+        "ap" = "Apparent Prevalence",
+        "tp" = "True Prevalence",
+        "se" = "Sensitivity",
+        "sp" = "Specificity",
+        "diag.ac" = "Diagnostic Accuracy",
+        "diag.or" = "Diagnostic Odds Ratio",
+        "nnd" = "Number Needed to Diagnose",
+        "youden" = "Youden's Index",
+        "ppv" = "Positive Predictive Value",
+        "npv" = "Negative Predictive Value",
+        "plr" = "Positive Likelihood Ratio",
+        "nlr" = "Negative Likelihood Ratio"
+    )
+    
+    # Create epiR results data frame
+    ep.res_df <- data.frame(
+        Test = stat_names[ep.res$statistic],
+        Estimate = ep.res$est,
+        LowerCI = ep.res$lower,
+        UpperCI = ep.res$upper,
+        p.value = NA,
+        stringsAsFactors = FALSE,
+        row.names = NULL
+    )
+    
+    # Get additional metrics from caret
+    caret_metrics <- data.frame(
+        Test = c("Balanced Accuracy", "Kappa", "McNemar's Test P-Value",
+                "No Information Rate"),
+        Estimate = c(res.car$byClass["Balanced Accuracy"],
+                    res.car$overall["Kappa"],
+                    NA,
+                    res.car$overall["No Information Rate"]),
+        LowerCI = NA,
+        UpperCI = NA,
+        p.value = c(NA, NA, 
+                    res.car$overall["McnemarPValue"],
+                    res.car$overall["AccuracyPValue"]),
+        stringsAsFactors = FALSE,
+        row.names = NULL
+    )
+    
+    # Combine results
+    results <- rbind(ep.res_df, caret_metrics)
+    
+    # Clean up test names to be more readable
+    results$Test <- gsub("\\.", " ", results$Test)
+    results$Test <- tools::toTitleCase(results$Test)
+    
+    # Ensure all columns are properly formatted
+    results$Test <- as.character(results$Test)
+    results$Estimate <- as.numeric(as.character(results$Estimate))
+    results$LowerCI <- as.numeric(as.character(results$LowerCI))
+    results$UpperCI <- as.numeric(as.character(results$UpperCI))
+    results$p.value <- as.numeric(as.character(results$p.value))
+    
+    # Round numeric columns if requested
+    if(should_round) {
+        numeric_cols <- sapply(results, is.numeric)
+        results[numeric_cols] <- round(results[numeric_cols], 2)
+    }
+    
+    return(results)
+}
+
+get_full_diagnostic_results <- function(dat.tbl, confInt, should_round) {
+    # Get epiR results
+    ep.res <- summary(epi.tests(dat.tbl, conf.level = confInt))
+    
+    # Get caret results
+    res.car <- confusionMatrix(as.table(dat.tbl))
+    
+    # Format and return results
+    return(format_diagnostic_results(ep.res, res.car, should_round))
+}
+
+format_contingency_results <- function(test_result) {
+    # Extract test statistics and format them
+    if (inherits(test_result, "htest")) {
+        results <- data.frame(
+            Metric = c("Test Type", "Statistic", "P-value", "Alternative Hypothesis"),
+            Value = c(
+                test_result$method,
+                sprintf("%.3f", test_result$statistic),
+                sprintf("%.4f", test_result$p.value),
+                test_result$alternative
+            ),
+            stringsAsFactors = FALSE
+        )
+        
+        return(results)
+    } else {
+        return(data.frame(
+            Metric = "Error",
+            Value = "Invalid test result format"
+        ))
+    }
+}
 
 
 
