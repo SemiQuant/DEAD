@@ -133,27 +133,65 @@ header <- dashboardHeader(
     titleWidth = 450,
     tags$li(class = "dropdown",
         tags$head(
-            # Meta description
+            # Basic Meta Tags
             tags$meta(name = "description", content = "DEAD (Diagnostic Estimates and Disease) is a free statistical tool for evaluating diagnostic test performance, including sensitivity, specificity, ROC curves, and contingency tables."),
+            tags$meta(name = "keywords", content = "diagnostic test calculator, sensitivity specificity calculator, ROC curve analysis, medical statistics, diagnostic accuracy, contingency tables, McNemar test, likelihood ratios, diagnostic odds ratio, medical research tools"),
             
-            # Keywords
-            tags$meta(name = "keywords", content = "diagnostic test calculator, sensitivity specificity calculator, ROC curve analysis, medical statistics, diagnostic accuracy, contingency tables, McNemar test"),
-            
-            # Open Graph tags for social sharing
+            # Open Graph Tags
             tags$meta(property = "og:title", content = "DEAD - Diagnostic Test Calculator"),
             tags$meta(property = "og:description", content = "Free statistical tool for evaluating diagnostic test performance"),
             tags$meta(property = "og:image", content = "sq.png"),
+            tags$meta(property = "og:type", content = "website"),
+            tags$meta(property = "og:site_name", content = "DEAD Calculator"),
+            tags$meta(property = "og:locale", content = "en_US"),
             
-            # Twitter Card tags
-            tags$meta(name = "twitter:card", content = "summary"),
+            # Twitter Card Tags
+            tags$meta(name = "twitter:card", content = "summary_large_image"),
             tags$meta(name = "twitter:title", content = "DEAD - Diagnostic Test Calculator"),
             tags$meta(name = "twitter:description", content = "Free statistical tool for evaluating diagnostic test performance"),
             tags$meta(name = "twitter:image", content = "sq.png"),
+            tags$meta(name = "twitter:site", content = "@semiquant"),
             
-            # Additional meta tags
+            # Additional Meta Tags
             tags$meta(name = "author", content = "SemiQuant"),
             tags$meta(name = "viewport", content = "width=device-width, initial-scale=1.0"),
-            tags$meta(name = "robots", content = "index, follow")
+            tags$meta(name = "robots", content = "index, follow"),
+            tags$meta(name = "language", content = "English"),
+            tags$meta(name = "revisit-after", content = "7 days"),
+            tags$meta(name = "rating", content = "General"),
+            
+            # Canonical URL
+            tags$link(rel = "canonical", href = "https://semiquant.com/dead"),
+            
+            # Structured Data (JSON-LD)
+            tags$script(type = "application/ld+json",
+                '{
+                    "@context": "https://schema.org",
+                    "@type": "WebApplication",
+                    "name": "DEAD - Diagnostic Estimates and Disease Calculator",
+                    "description": "A free statistical tool for evaluating diagnostic test performance, including sensitivity, specificity, ROC curves, and contingency tables.",
+                    "url": "https://semiquant.com/dead",
+                    "applicationCategory": "Medical Software",
+                    "operatingSystem": "Any",
+                    "offers": {
+                        "@type": "Offer",
+                        "price": "0",
+                        "priceCurrency": "USD"
+                    },
+                    "featureList": [
+                        "Sensitivity and Specificity Calculation",
+                        "ROC Curve Analysis",
+                        "Contingency Tables",
+                        "McNemar Test",
+                        "Likelihood Ratios"
+                    ],
+                    "author": {
+                        "@type": "Organization",
+                        "name": "SemiQuant",
+                        "url": "https://semiquant.com"
+                    }
+                }'
+            )
         )
     ),
     dropdownMenu(type = "notifications", icon = icon("copyright"), badgeStatus = NULL,
@@ -497,7 +535,7 @@ body <- dashboardBody(
                 ),
                 box(title = "Enter Data (tab seperated, you can copy paste from excel)", collapsible = T, collapsed = F, width = 6,
                     aceEditor("DTbin_input", theme = "idle_fingers",
-                              value='GoldStandard\tTest1\tTest2\n0\t0\t1\n0\t1\t0\n0\t0\t1\n0\t0\t0\n1\t1\t0\n1\t0\t0\n0\t1\t1\n0\t1\t0\n0\t1\t1\n1\t1\t0\n0\t0\t0\n1\t1\t1\n1\t0\t0\n1\t1\t1\n0\t1\t0\n0\t1\t0\n1\t1\t0\n0\t0\t1\n1\t0\t0\n1\t1\t0\n1\t0\t0\n1\t1\t0\n1\t1\t1\n1\t0\t0\n1\t1\t1\n1\t1\t0\n0\t1\t0\n0\t0\t1\n0\t0\t0\n0\t1\t0\n1\t1\t0\n0\t0\t1\n1\t1\t1\n1\t0\t0\n1\t0\t1\n0\t1\t0\n1\t1\t0\n1\t0\t1\n1\t0\t0\n0\t1\t0\n1\t1\t0\n0\t1\t1\n1\t0\t1\n1\t1\t1\n0\t1\t0\n1\t0\t0\n0\t1\t1\n1\t0\t0\n1\t0\t1\n0\t0\t0\n0\t0\t1\n1\t0\t1\n0\t1\t0\n1\t1\t0\n1\t0\t1\n1\t0\t1\n1\t0\t0\n0\t0\t0\n1\t1\t0\n0\t0\t1\n1\t0\t0\n1\t1\t0\n1\t0\t0\n0\t1\t1\n0\t1\t0\n1\t0\t1\n1\t1\t1\n0\t0\t0\n1\t1\t0\n1\t0\t0\n1\t0\t1\n0\t0\t0\n1\t1\t1\n0\t0\t0\n0\t0\t1\n0\t0\t0\n0\t1\t0\n0\t1\t0\n0\t1\t0\n0\t0\t1\n1\t0\t0\n1\t1\t0\n1\t0\t0\n0\t1\t1\n1\t1\t0\n0\t1\t0\n1\t0\t0\n1\t0\t0\n1\t0\t1\n0\t1\t0\n1\t1\t1\n1\t1\t0\n1\t1\t0\n1\t1\t0\n0\t1\t0\n1\t0\t0\n1\t0\t0\n0\t0\t1\n0\t1\t0\n0\t1\t0\n0\t0\t1\n0\t1\t0\n0\t0\t0\n0\t0\t0\n0\t0\t1\n1\t0\t1\n0\t1\t0\n1\t0\t0\n0\t1\t0\n1\t1\t1\n1\t0\t0\n0\t0\t0\n1\t0\t0\n1\t1\t0\n0\t0\t0\n1\t0\t1\n1\t1\t0\n0\t1\t0\n1\t1\t0\n0\t0\t0\n0\t0\t1\n0\t0\t1\n0\t0\t0\n1\t0\t0\n0\t1\t0\n1\t0\t1\n0\t1\t1\n1\t0\t0\n1\t1\t0\n0\t0\t0\n0\t1\t0\n1\t0\t1\n0\t1\t0\n1\t1\t0\n1\t0\t0\n0\t1\t0\n0\t1\t1\n1\t0\t0\n0\t0\t0\n1\t0\t0\n1\t1\t0\n0\t0\t1\n1\t0\t1\n1\t1\t1\n0\t0\t0\n1\t0\t1\n1\t0\t0\n0\t1\t0\n1\t0\t0\n1\t1\t0\n1\t0\t1\n0\t1\t0\n1\t0\t0\n1\t1\t0\n1\t1\t1\n1\t0\t0\n1\t0\t0\n0\t1\t1\n1\t1\t0\n0\t0\t0\n1\t1\t0\n0\t0\t0\n1\t1\t0\n1\t1\t0\n0\t0\t1\n1\t1\t1\n1\t0\t0\n1\t1\t0\n1\t0\t0\n1\t0\t0\n0\t1\t1\n1\t0\t1\n1\t0\t1\n1\t1\t0\n0\t0\t0\n1\t0\t0\n1\t1\t0\n1\t0\t1\n0\t0\t0\n1\t0\t1\n1\t0\t0\n0\t0\t0\n0\t1\t0\n1\t0\t0\n0\t0\t0\n1\t0\t0\n1\t0\t0\n1\t1\t1\n1\t0\t0\n0\t0\t0\n1\t0\t0\n1\t0\t1\n0\t1\t0\n1\t0\t0\n0\t1\t1\n1\t1\t1\n1\t1\t0',
+                              value='GoldStandard\tTest1\tTest2\n0\t0\t1\n0\t1\t0\n0\t0\t1\n0\t0\t0\n1\t1\t0\n1\t0\t0\n0\t1\t1\n0\t1\t0\n0\t1\t1\n1\t1\t0\n0\t0\t0\n1\t1\t1\n1\t0\t0\n1\t1\t1\n0\t1\t0\n0\t1\t0\n1\t1\t0\n0\t0\t1\n1\t0\t0\n1\t1\t0\n1\t0\t0\n1\t1\t0\n1\t1\t1\n1\t0\t0\n1\t1\t1\n1\t1\t0\n0\t1\t0\n0\t0\t1\n0\t0\t0\n0\t1\t0\n1\t1\t0\n0\t0\t1\n1\t1\t1\n1\t0\t0\n1\t0\t1\n0\t1\t0\n1\t1\t0\n1\t0\t1\n1\t0\t0\n0\t1\t0\n1\t1\t0\n0\t1\t1\n1\t0\t1\n1\t1\t1\n0\t1\t0\n1\t0\t0\n0\t1\t1\n1\t0\t0\n1\t0\t1\n0\t0\t0\n0\t0\t1\n1\t0\t1\n0\t1\t0\n1\t1\t0\n1\t0\t1\n1\t0\t1\n1\t0\t0\n0\t0\t0\n1\t1\t0\n0\t0\t1\n1\t0\t0\n1\t1\t0\n1\t0\t0\n0\t1\t1\n0\t1\t0\n1\t0\t1\n1\t1\t1\n0\t0\t0\n1\t1\t0\n1\t0\t0\n1\t0\t1\n0\t0\t0\n1\t1\t1\n0\t0\t0\n0\t0\t1\n0\t0\t0\n0\t1\t0\n0\t1\t0\n0\t1\t0\n0\t0\t1\n1\t0\t0\n1\t1\t0\n1\t0\t0\n0\t1\t1\n1\t1\t0\n0\t1\t0\n1\t0\t0\n1\t0\t0\n1\t0\t1\n0\t1\t0\n1\t1\t1\n1\t1\t0\n1\t1\t0\n1\t1\t0\n0\t1\t0\n1\t0\t0\n1\t0\t0\n0\t0\t1\n0\t1\t0\n0\t1\t0\n0\t0\t1\n0\t1\t0\n0\t0\t0\n0\t0\t0\n0\t0\t1\n1\t0\t1\n0\t1\t0\n1\t0\t0\n0\t1\t0\n1\t1\t1\n1\t0\t0\n0\t0\t0\n1\t0\t0\n1\t1\t0\n0\t0\t0\n1\t0\t1\n1\t1\t0\n0\t1\t0\n1\t1\t0\n0\t0\t0\n0\t0\t1\n0\t0\t1\n0\t0\t0\n1\t0\t0\n0\t1\t0\n1\t0\t1\n0\t1\t1\n1\t0\t0\n1\t1\t0\n0\t0\t0\n0\t1\t0\n1\t0\t1\n0\t1\t0\n1\t1\t0\n1\t0\t0\n0\t1\t0\n0\t1\t1\n1\t0\t0\n0\t0\t0\n1\t0\t0\n1\t1\t0\n0\t0\t1\n1\t0\t1\n1\t1\t1\n0\t0\t0\n1\t0\t1\n1\t0\t0\n0\t1\t0\n1\t0\t0\n1\t1\t0\n1\t0\t1\n0\t1\t0\n1\t0\t0\n1\t1\t0\n1\t1\t1\n1\t0\t0\n1\t0\t0\n0\t1\t1\n1\t1\t0\n0\t0\t0\n1\t1\t0\n0\t0\t0\n1\t1\t0\n1\t1\t0\n0\t0\t1\n1\t1\t1\n1\t0\t0\n1\t1\t0\n1\t0\t0\n1\t0\t0\n0\t1\t1\n1\t0\t1\n1\t0\t1\n1\t1\t0\n0\t0\t0\n1\t0\t0\n1\t1\t0\n1\t0\t1\n0\t0\t0\n1\t0\t1\n1\t0\t0\n0\t1\t0\n1\t0\t0\n0\t0\t0\n1\t0\t0\n1\t0\t0\n1\t1\t1\n1\t0\t0\n0\t0\t0\n1\t0\t0\n1\t0\t1\n0\t1\t0\n1\t0\t0\n0\t1\t1\n1\t1\t1\n1\t1\t0',
                               mode="r", height = "765px", fontSize = 14)
                 ),
                 box(
