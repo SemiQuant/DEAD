@@ -136,7 +136,7 @@ header <- dashboardHeader(
         tags$head(
             # Basic Meta Tags
             tags$meta(name = "description", content = "DEAD (Diagnostic Estimates and Disease) is a free statistical tool for evaluating diagnostic test performance, including sensitivity, specificity, ROC curves, and contingency tables. Similar to OpenEpi, MedCalc, Omni calculator, epitools,and other sensitivity and specificity calculators."),
-            tags$meta(name = "keywords", content = "diagnostic test calculator, sensitivity specificity calculator, ROC curve analysis, medical statistics, diagnostic accuracy, contingency tables, McNemar test, likelihood ratios, diagnostic odds ratio, medical research tools Similar to OpenEpi, MedCalc, Omni calculator, epitools,and other sensitivity and specificity calculators."),"),
+            tags$meta(name = "keywords", content = "diagnostic test calculator, sensitivity specificity calculator, ROC curve analysis, medical statistics, diagnostic accuracy, contingency tables, McNemar test, likelihood ratios, diagnostic odds ratio, medical research tools Similar to OpenEpi, MedCalc, Omni calculator, epitools,and other sensitivity and specificity calculators."),
             
             # Open Graph Tags
             tags$meta(property = "og:title", content = "DEAD - Diagnostic Test Calculator"),
