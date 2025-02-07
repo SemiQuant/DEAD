@@ -1,3 +1,4 @@
+.libPaths(c("/home/semiquant/R/x86_64-pc-linux-gnu-library/4.4", "/usr/local/lib/R/site-library", "/usr/lib/R/site-library", "/usr/lib/R/library", .libPaths()))
 require(BiocManager)
 require(shiny)
 require(shinyjs)
